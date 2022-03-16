@@ -4,12 +4,6 @@ using namespace std;
 
 typedef pair<int, double> pid;
 
-struct Less
-{
-   bool operator()(const pid& a, const pid& b){
-       return a.second > b.second;
-   }
-};
 
 
 class Heap{
@@ -22,32 +16,24 @@ class Heap{
     }
 
     public:
-    vector<pid> heap;
-
+    priority_queue<pid, vector<pid>, greater<pid>> heap;
     int size;
 
     Heap(int k){
         size=k;
-        make_heap(heap.begin(), heap.end(), Less());
     }
-    Heap(int k, vector<pid> v){
+    Heap(int k, priority_queue<pid, vector<pid>, greater<pid>> v){
         size=k;
-        for(int i=0; i<v.size(); i++){
-            heap.push_back(v[i]);
-        }
-        make_heap(heap.begin(), heap.end(), Less());
+        heap = v;
     }
 
     void push(pid p){
-        heap.push_back(p);
-        push_heap(heap.begin(), heap.end(), Less());
+        heap.push(p);
     }
 
     pid pop(){
-        pid p = heap.front();
-        pop_heap(heap.begin(), heap.end(), Less());
-        heap.pop_back();
-
+        pid p = heap.top();
+        heap.pop();
         return p;
     }
 
@@ -60,33 +46,14 @@ class Heap{
     }
   
     double getMax(bool isInd = false){
-        int ind = 0;
-        for(int i=0; i<heap.size(); i++){
-            if(heap[i].second > heap[ind].second){
-                ind = i;
-            }
-        }
-        if(isInd){
-            return ind;
-        }
-        return heap[ind].second;
+        return heap.top().second;
     }
 
     // WORKS IF heap.size = size + 1
     void trim(){
         if(heap.size()>size){
-            int m = getMax(true);
-            swap(heap[m], heap[heap.size()-1]);
-            heap.pop_back();
-            make_heap(heap.begin(), heap.end(), Less());
+            heap.pop();
         }
-    }
-
-    void print(){
-        for(int i=0; i<heap.size(); i++){
-            cout << "("<< heap[i].first << " " << heap[i].second << "), ";
-        }
-        cout << endl;
     }
 };
 
@@ -132,7 +99,7 @@ void searchLayer(double* q, int d, Heap& top_k, int* indptr, int* level_offset, 
             if(visited.find(px) != visited.end() || px == -1) continue;
             visited.insert(px);
             double dist = cosine_dist(vect[px], q, d);
-            if(dist > top_k.getMax() && !top_k.has_space()) continue;
+            if(dist < top_k.getMax() && !top_k.has_space()) continue;
             // cout << "**pushing " << px << " " << dist << endl;
             top_k.push(pid(px,dist));
             top_k.trim();
@@ -160,7 +127,7 @@ int* queryHNSW(double* q, int d, int k, int ep, int* indptr, int* index, int* le
         // cout << endl;
         // cout << "Size: " << top_k.getSize() << endl;
     }
-    top_k.print();
+    // top_k.print();
     int* ans = new int[k];
     for(int i = 0; i < k; i++){
         ans[i] = top_k.pop().first;
