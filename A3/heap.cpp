@@ -18,12 +18,6 @@ struct Less
    }
 };
 
-struct Greater
-{
-   bool operator()(const pid& a, const pid& b){
-       return a.second < b.second;
-   }
-};
 
 
 class Heap{
@@ -45,6 +39,14 @@ class Heap{
         make_heap(heap.begin(), heap.end(), Less());
     }
 
+    Heap(int k, vector<pid> v){
+        size=k;
+        for(int i=0; i<v.size(); i++){
+            heap.push_back(v[i]);
+        }
+        make_heap(heap.begin(), heap.end(), Less());
+    }
+
     void push(pid p){
         heap.push_back(p);
         push_heap(heap.begin(), heap.end(), Less());
@@ -61,64 +63,66 @@ class Heap{
     bool has_space(){
         return heap.size()<size;
     }
+
+    int getSize(){
+        return heap.size();
+    }
   
     double getMax(bool isInd = false){
-        int ind = 0;
-        for(int i=0; i<heap.size(); i++){
-            if(heap[i].second > heap[ind].second){
-                ind = i;
-            }
-        }
-        if(isInd){
-            return ind;
-        }
-        return heap[ind].second;
+        return heap.front().second;
     }
 
+    // WORKS IF heap.size = size + 1
     void trim(){
         if(heap.size()>size){
-            int m = getMax(true);
-            swap(heap[m], heap[heap.size()-1]);
             heap.pop_back();
             make_heap(heap.begin(), heap.end(), Less());
         }
     }
+
+    void print(){
+        for(int i=0; i<heap.size(); i++){
+            cout << "("<< heap[i].first << " " << heap[i].second << "), ";
+        }
+        cout << endl;
+    }
 };
 
-// int main(int argc, char const *argv[])
-// {
-//     int size=10;
-//     int array[size] = {9,3,8,-1,33,-43,9,11,99,0};
 
-//     Heap* h = new Heap(8);
-//     for(int i=0; i<size; i++){
-//         cout << "pushing " << array[i] << endl;
-//         h->push({i, array[i]});
+int main(int argc, char const *argv[])
+{
+    int size=10;
+    int array[size] = {9,3,8,-1,33,-43,9,11,99,0};
+
+    Heap* h = new Heap(8);
+    for(int i=0; i<size; i++){
+        cout << "pushing " << array[i] << endl;
+        h->push({i, array[i]});
         
-//         for(int j=0; j<h->heap.size(); j++){
-//             cout << "(" << h->heap[j].first << " " << h->heap[j].second << "), ";
-//         }
-//         cout << endl;
-//     }
+        for(int j=0; j<h->heap.size(); j++){
+            cout << "(" << h->heap[j].first << " " << h->heap[j].second << "), ";
+        }
+        cout << endl;
+    }
 
-//     cout << "popping " << endl;
-//     pid a = h->pop();
-//     cout << "(" << a.first << " " << a.second << ")" << endl;
-//     for(int j=0; j<h->heap.size(); j++){
-//         cout << "(" << h->heap[j].first << " " << h->heap[j].second << "), ";
-//     }
+    cout << "popping " << endl;
+    pid a = h->pop();
+    cout << "(" << a.first << " " << a.second << ")" << endl;
+    for(int j=0; j<h->heap.size(); j++){
+        cout << "(" << h->heap[j].first << " " << h->heap[j].second << "), ";
+    }
 
-//     cout << endl;
+    cout << endl;
 
-//     cout << "getting max" << endl;
-//     cout << h->getMax() << endl;
+    cout << "getting max" << endl;
+    cout << h->getMax() << endl;
 
-//     cout << "trimming" << endl;
-//     h->trim();
+    cout << "trimming" << endl;
+    h->trim();
 
-//     for(int j=0; j<h->heap.size(); j++){
-//         cout << "(" << h->heap[j].first << " " << h->heap[j].second << "), ";
-//     }
+    for(int j=0; j<h->heap.size(); j++){
+        cout << "(" << h->heap[j].first << " " << h->heap[j].second << "), ";
+    }
 
-//     return 0;
-// }
+    return 0;
+}

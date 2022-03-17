@@ -4,6 +4,12 @@ using namespace std;
 
 typedef pair<int, double> pid;
 
+struct Less
+{
+   bool operator()(const pid& a, const pid& b){
+       return a.second > b.second;
+   }
+};
 
 
 class Heap{
@@ -16,15 +22,11 @@ class Heap{
     }
 
     public:
-    priority_queue<pid, vector<pid>, greater<pid>> heap;
+    priority_queue<pid, vector<pid>, Less> heap;
     int size;
 
     Heap(int k){
         size=k;
-    }
-    Heap(int k, priority_queue<pid, vector<pid>, greater<pid>> v){
-        size=k;
-        heap = v;
     }
 
     void push(pid p){
@@ -45,7 +47,7 @@ class Heap{
         return heap.size();
     }
   
-    double getMax(bool isInd = false){
+    double getMax(){
         return heap.top().second;
     }
 
@@ -54,6 +56,15 @@ class Heap{
         if(heap.size()>size){
             heap.pop();
         }
+    }
+
+    void print(){
+        priority_queue<pid, vector<pid>, Less> temp = heap;
+        while(!temp.empty()){
+            cout << "("<< temp.top().first << " " << temp.top().second << "), ";
+            temp.pop();
+        }
+        cout << endl;
     }
 };
 
@@ -80,7 +91,8 @@ double cosine_dist(double* a, double* b, int n)
 void searchLayer(double* q, int d, Heap& top_k, int* indptr, int* level_offset, int lc, 
                 int* index, unordered_set<int>& visited, double** vect)
 {
-    Heap candidats = Heap(top_k.size, top_k.heap);
+    Heap candidats = Heap(top_k.size);
+    candidats.heap = top_k.heap;
 
     while(candidats.getSize() > 0){
         int ep = candidats.pop().first;
@@ -100,7 +112,6 @@ void searchLayer(double* q, int d, Heap& top_k, int* indptr, int* level_offset, 
             visited.insert(px);
             double dist = cosine_dist(vect[px], q, d);
             if(dist < top_k.getMax() && !top_k.has_space()) continue;
-            // cout << "**pushing " << px << " " << dist << endl;
             top_k.push(pid(px,dist));
             top_k.trim();
             candidats.push(pid(px,dist));
@@ -127,9 +138,9 @@ int* queryHNSW(double* q, int d, int k, int ep, int* indptr, int* index, int* le
         // cout << endl;
         // cout << "Size: " << top_k.getSize() << endl;
     }
-    // top_k.print();
+    top_k.print();
     int* ans = new int[k];
-    for(int i = 0; i < k; i++){
+    for(int i = k-1; i >= 0; i--){
         ans[i] = top_k.pop().first;
     }
     return ans;
