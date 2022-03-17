@@ -5,9 +5,9 @@ using namespace std;
 
 int getBuffSize(int len, int size, int rank){
     int buffsize = len/size;
-    // if(rank == size-1){
-    //     buffsize = len - (size-1)*buffsize;
-    // }
+    if(rank == size-1){
+        buffsize = len - (size-1)*buffsize;
+    }
     return buffsize;
 }
 
@@ -15,12 +15,31 @@ void readMPI(const char *filename, int* arr, int len, int size, int rank, MPI_Fi
     
     int blockSize =  sizeof(int);
     int buffsize = getBuffSize(len, size, rank);
-    int disp = rank*buffsize*blockSize;
+    int disp = rank*(len/size)*blockSize;
+
     MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_RDONLY, MPI_INFO_NULL, &fs);
     MPI_File_set_view(fs, disp, MPI_INT, MPI_INT, "native", MPI_INFO_NULL);
 
     MPI_File_read(fs, arr, buffsize, MPI_INT, MPI_STATUS_IGNORE);
     MPI_File_close(&fs);
+}
+
+void gatherMPI(const char *filename, int* arr, int len, int size, int rank, MPI_File &fs){
+    int* temp = new int[len/size];
+    readMPI(filename, temp, len, size, rank, fs);
+    MPI_Allgather(temp, len/size, MPI_INT, arr, len/size, MPI_INT, MPI_COMM_WORLD);
+
+    int left = getBuffSize(len, size, size - 1) - len/size;
+    if(left > 0){
+        for(int i=0; i<left; i++){
+            temp[i] = temp[len/size + i];
+        }
+
+        MPI_Bcast(temp, left, MPI_INT, size-1, MPI_COMM_WORLD);
+        for(int i=0; i<left; i++){
+            arr[size*(len/size) + i] = temp[i];
+        }
+    }
 }
 
 
@@ -51,11 +70,9 @@ int main(int argc, char* argv[]){
     int s_indptr = read[5];
     int d = read[6];
 
-    int* indp = new int(s_indptr);
-    readMPI("dummy_bin/indptr.bin", indp, s_indptr, size, rank, fs);
-
-    int* indptr = new int(s_indptr);
-    MPI_Gather(indp, s_indptr, MPI_INT, indptr, s_indptr/size, MPI_INT, 0, MPI_COMM_WORLD);
+    int* indptr = new int[s_indptr];
+    gatherMPI("dummy_bin/indptr.bin", indptr, s_indptr, size, rank, fs);
+    
     
     // double vect[n][d];
     // for(int i=0; i<n; i++){
@@ -70,11 +87,12 @@ int main(int argc, char* argv[]){
     cout <<"max level: "<<max_level<<endl;
     cout <<"n: "<<n<<endl;
     cout <<"d: "<<d<<endl;
-    cout <<"indptr: "<<endl;
-    for(int i=0; i<s_indptr; i++){
-        cout << indptr[i] << " ";
-    }
-    cout <<endl;
+
+        cout <<"indptr: "<<endl;
+        for(int i=0; i<s_indptr; i++){
+            cout << indptr[i] << " ";
+        }
+        cout <<endl;
 
     // cout<<"vect: "<<endl;
     // for(int i=0; i<n; i++){
