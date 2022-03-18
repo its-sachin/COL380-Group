@@ -25,11 +25,13 @@ void readMPI(const char *filename, int* arr, int len, int size, int rank, MPI_Fi
 }
 
 void gatherMPI(const char *filename, int* arr, int len, int size, int rank, MPI_File &fs){
-    int* temp = new int[len/size];
+    int* temp = new int[getBuffSize(len, size, rank)];
     readMPI(filename, temp, len, size, rank, fs);
+
     MPI_Allgather(temp, len/size, MPI_INT, arr, len/size, MPI_INT, MPI_COMM_WORLD);
 
     int left = getBuffSize(len, size, size - 1) - len/size;
+
     if(left > 0){
         for(int i=0; i<left; i++){
             temp[i] = temp[len/size + i];
@@ -113,23 +115,6 @@ int main(int argc, char* argv[]){
     int s_indptr = read[5];
     int d = read[6];
 
-    double* vect = new double[n*d];
-    gatherMPI("dummy_bin/vect.bin", vect, n, d, size, rank, fs);
-
-    double* q = new double[n*d];
-    gatherMPI("dummy_bin/vect.bin", q, n, d, size, rank, fs);
-
-
-    int* indptr = new int[s_indptr];
-    gatherMPI("dummy_bin/indptr.bin", indptr, s_indptr, size, rank, fs);
-
-    int* index = new int[s_index];
-    gatherMPI("dummy_bin/index.bin", index, s_index, size, rank, fs);
-
-    int* level_offset = new int[s_level_offset];
-    gatherMPI("dummy_bin/level_offset.bin", level_offset, s_level_offset, size, rank, fs);
-
-
     cout << rank << ": "<<"n: "<<n<<endl;
     cout << rank << ": "<< "ep: "<<ep<<endl;
     cout << rank << ": "<<"max level: "<<max_level<<endl;
@@ -138,6 +123,9 @@ int main(int argc, char* argv[]){
     cout << rank << ": "<<"s_indptr: "<<s_indptr<<endl;
     cout << rank << ": "<<"d: "<<d<<endl;
 
+    int* indptr = new int[s_indptr];
+    gatherMPI("dummy_bin/indptr.bin", indptr, s_indptr, size, rank, fs);
+
     cout << rank << ": "<<"indptr: "<<endl;
     cout<< rank << ": ";
     for(int i=0; i<s_indptr; i++){
@@ -145,12 +133,8 @@ int main(int argc, char* argv[]){
     }
     cout <<endl;
 
-    cout<< rank << ": "<<"level_offset: "<<endl;
-    cout<< rank << ": ";
-    for(int i=0; i<s_level_offset; i++){
-        cout <<  level_offset[i] << " ";
-    }
-    cout <<endl;
+    int* index = new int[s_index];
+    gatherMPI("dummy_bin/index.bin", index, s_index, size, rank, fs);
 
     cout<< rank << ": "<<"index: "<<endl;
     cout<< rank << ": ";
@@ -159,6 +143,18 @@ int main(int argc, char* argv[]){
     }
     cout <<endl;
 
+    int* level_offset = new int[s_level_offset];
+    gatherMPI("dummy_bin/level_offset.bin", level_offset, s_level_offset, size, rank, fs);
+
+    cout<< rank << ": "<<"level_offset: "<<endl;
+    cout<< rank << ": ";
+    for(int i=0; i<s_level_offset; i++){
+        cout <<  level_offset[i] << " ";
+    }
+    cout <<endl;
+
+    double* vect = new double[n*d];
+    gatherMPI("dummy_bin/vect.bin", vect, n, d, size, rank, fs);
 
     cout<< rank << ": "<<"vect: "<<endl;
     for(int i=0; i<n; i++){
@@ -168,6 +164,9 @@ int main(int argc, char* argv[]){
         }
         cout<<endl;
     }
+
+    double* q = new double[n*d];
+    gatherMPI("dummy_bin/vect.bin", q, n, d, size, rank, fs);
 
     cout<< rank << ": "<<"q: "<<endl;
     for(int i=0; i<n; i++){

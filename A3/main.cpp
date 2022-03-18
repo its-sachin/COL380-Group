@@ -170,11 +170,13 @@ void readMPI(const char *filename, int* arr, int len, int size, int rank, MPI_Fi
 }
 
 void gatherMPI(const char *filename, int* arr, int len, int size, int rank, MPI_File &fs){
-    int* temp = new int[len/size];
+    int* temp = new int[getBuffSize(len, size, rank)];
     readMPI(filename, temp, len, size, rank, fs);
+
     MPI_Allgather(temp, len/size, MPI_INT, arr, len/size, MPI_INT, MPI_COMM_WORLD);
 
     int left = getBuffSize(len, size, size - 1) - len/size;
+
     if(left > 0){
         for(int i=0; i<left; i++){
             temp[i] = temp[len/size + i];
@@ -230,7 +232,6 @@ void gatherMPI(const char *filename, double* arr, int n, int d, int size, int ra
     delete (temp);
 }
 
-
 int main(int argc, char* argv[]){
 
     int rank, size;
@@ -255,16 +256,10 @@ int main(int argc, char* argv[]){
     int s_index = read[4];
     int s_indptr = read[5];
     int d = read[6];
-    
-    double* vect = new double[n*d];
-    gatherMPI("dummy_bin/vect.bin", vect, n, d, size, rank, fs);
-
-    double* q = new double[n*d];
-    gatherMPI("dummy_bin/vect.bin", q, n, d, size, rank, fs);
-
 
     int* indptr = new int[s_indptr];
     gatherMPI("dummy_bin/indptr.bin", indptr, s_indptr, size, rank, fs);
+
 
     int* index = new int[s_index];
     gatherMPI("dummy_bin/index.bin", index, s_index, size, rank, fs);
@@ -272,6 +267,11 @@ int main(int argc, char* argv[]){
     int* level_offset = new int[s_level_offset];
     gatherMPI("dummy_bin/level_offset.bin", level_offset, s_level_offset, size, rank, fs);
 
+    double* vect = new double[n*d];
+    gatherMPI("dummy_bin/vect.bin", vect, n, d, size, rank, fs);
+
+    double* q = new double[n*d];
+    gatherMPI("dummy_bin/vect.bin", q, n, d, size, rank, fs);
 
     int start = rank*(n/size);
     int end = (rank+1)*(n/size);
@@ -284,11 +284,11 @@ int main(int argc, char* argv[]){
     for(int i=start; i<end; i++){
         cout << rank << ": " <<"i: " << i << endl;
         int* ans = queryHNSW(q, i, d, k, ep, indptr, index, level_offset, max_level, vect);
-        cout << rank << ": top k for q[" << i << "] =";
+        cout << "[" <<rank << ": top k for q[" << i << "] =";
         for(int j=0; j<k; j++){
             cout << ans[j] << " ";
         }
-        cout <<"\n"<< endl;
+        cout <<"]"<< endl;
     }
 
     MPI_Finalize();
