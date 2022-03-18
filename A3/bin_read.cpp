@@ -40,6 +40,49 @@ void gatherMPI(const char *filename, int* arr, int len, int size, int rank, MPI_
             arr[size*(len/size) + i] = temp[i];
         }
     }
+
+    delete (temp);
+}
+
+void gatherMPI(const char *filename, double* arr, int n, int d, int size, int rank, MPI_File &fs){
+
+    MPI_Datatype row;
+    MPI_Type_contiguous(d, MPI_DOUBLE, &row);
+    MPI_Type_commit(&row);
+
+    int blockSize =  sizeof(double)*d;
+    int disp = rank*(n/size)*blockSize;
+
+    MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_RDONLY, MPI_INFO_NULL, &fs);
+    MPI_File_set_view(fs, disp, row, MPI_DOUBLE, "native", MPI_INFO_NULL);
+
+    int start = rank*(n/size);
+    int end = (rank+1)*(n/size);
+    if(rank == size-1){
+        end = n;
+    }
+
+    double *temp = new double[(end-start)*d];
+    MPI_File_read(fs, temp, end-start, row, MPI_STATUS_IGNORE);
+
+    MPI_File_close(&fs);
+    MPI_Allgather(temp, n/size, row, arr, n/size, row, MPI_COMM_WORLD);
+
+    int left = end - start - n/size;
+    if(left > 0){
+        for(int i=0; i<left; i++){
+            for(int j=0; j<d; j++)
+                temp[i*d + j] = temp[(n/size + i)*d + j];
+        }
+
+        MPI_Bcast(temp, left, row, size-1, MPI_COMM_WORLD);
+        for(int i=0; i<left; i++){
+            for(int j=0; j<d; j++)
+                arr[(size*(n/size) + i)*d + j] = temp[i*d + j];
+        }
+    }
+
+    delete (temp);
 }
 
 
@@ -70,37 +113,71 @@ int main(int argc, char* argv[]){
     int s_indptr = read[5];
     int d = read[6];
 
+    double* vect = new double[n*d];
+    gatherMPI("dummy_bin/vect.bin", vect, n, d, size, rank, fs);
+
+    double* q = new double[n*d];
+    gatherMPI("dummy_bin/vect.bin", q, n, d, size, rank, fs);
+
+
     int* indptr = new int[s_indptr];
     gatherMPI("dummy_bin/indptr.bin", indptr, s_indptr, size, rank, fs);
-    
-    
-    // double vect[n][d];
-    // for(int i=0; i<n; i++){
-    //     for(int j=0; j<d; j++){
-    //         f.read((char*)&vect[i][j], sizeof(double));
-    //     }
-    // }
 
-    // f.close();
+    int* index = new int[s_index];
+    gatherMPI("dummy_bin/index.bin", index, s_index, size, rank, fs);
 
-    cout << "ep: "<<ep<<endl;
-    cout <<"max level: "<<max_level<<endl;
-    cout <<"n: "<<n<<endl;
-    cout <<"d: "<<d<<endl;
+    int* level_offset = new int[s_level_offset];
+    gatherMPI("dummy_bin/level_offset.bin", level_offset, s_level_offset, size, rank, fs);
 
-        cout <<"indptr: "<<endl;
-        for(int i=0; i<s_indptr; i++){
-            cout << indptr[i] << " ";
+
+    cout << rank << ": "<<"n: "<<n<<endl;
+    cout << rank << ": "<< "ep: "<<ep<<endl;
+    cout << rank << ": "<<"max level: "<<max_level<<endl;
+    cout << rank << ": "<<"s_level_offset: "<<s_level_offset<<endl;
+    cout << rank << ": "<<"s_index: "<<s_index<<endl;
+    cout << rank << ": "<<"s_indptr: "<<s_indptr<<endl;
+    cout << rank << ": "<<"d: "<<d<<endl;
+
+    cout << rank << ": "<<"indptr: "<<endl;
+    cout<< rank << ": ";
+    for(int i=0; i<s_indptr; i++){
+        cout <<  indptr[i] << " ";
+    }
+    cout <<endl;
+
+    cout<< rank << ": "<<"level_offset: "<<endl;
+    cout<< rank << ": ";
+    for(int i=0; i<s_level_offset; i++){
+        cout <<  level_offset[i] << " ";
+    }
+    cout <<endl;
+
+    cout<< rank << ": "<<"index: "<<endl;
+    cout<< rank << ": ";
+    for(int i=0; i<s_index; i++){
+        cout <<  index[i] << " ";
+    }
+    cout <<endl;
+
+
+    cout<< rank << ": "<<"vect: "<<endl;
+    for(int i=0; i<n; i++){
+        cout<< rank << ": ";
+        for(int j=0; j<d; j++){
+            cout<<vect[i*d + j]<<" ";
         }
-        cout <<endl;
+        cout<<endl;
+    }
 
-    // cout<<"vect: "<<endl;
-    // for(int i=0; i<n; i++){
-    //     for(int j=0; j<d; j++){
-    //         cout<<vect[i][j]<<" ";
-    //     }
-    //     cout<<endl;
-    // }
+    cout<< rank << ": "<<"q: "<<endl;
+    for(int i=0; i<n; i++){
+        cout<< rank << ": ";
+        for(int j=0; j<d; j++){
+            cout<<q[i*d + j]<<" ";
+        }
+        cout<<endl;
+    }
+
 
     MPI_Finalize();
 }

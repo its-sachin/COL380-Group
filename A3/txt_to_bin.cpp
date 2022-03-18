@@ -53,6 +53,8 @@ int main(int argc, char* argv[]){
     writeIt(7, outfile, sizeof(int));
     writeIt(5, outfile, sizeof(int));
 
+    outfile.close();
+
     outfile.open(folder + "index.bin", std::ios::out | std::ios::binary);
     for(int i = 0; i < 25; i++){
         writeIt(index[i], outfile, sizeof(int));
@@ -72,11 +74,7 @@ int main(int argc, char* argv[]){
     outfile.close();
 
     outfile.open(folder + "vect.bin", std::ios::out | std::ios::binary);
-    for(int i = 0; i < 6; i++){
-        for(int j = 0; j < 5; j++){
-            writeIt(a[i][j], outfile, sizeof(double));
-        }
-    }
+    outfile.write((char *) &a, sizeof a);
     outfile.close();
 
 }

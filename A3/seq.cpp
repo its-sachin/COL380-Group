@@ -68,19 +68,19 @@ class Heap{
     }
 };
 
-double dotProduct(double* a, double* b, int n)
+double dotProduct(double* a, int ai, double* b, int bi, int n)
 {
     double sum = 0;
     for(int i = 0; i < n; i++)
-        sum += a[i] * b[i];
+        sum += a[i + ai*n] * b[i + bi*n];
     return sum;
 }
 
-double cosine_dist(double* a, double* b, int n)
+double cosine_dist(double* a, int ai, double* b, int bi, int n)
 {
-    double dot = dotProduct(a, b, n);
-    double mod_a = dotProduct(a, a, n);
-    double mod_b = dotProduct(b, b, n);
+    double dot = dotProduct(a, ai, b, bi, n);
+    double mod_a = dotProduct(a, ai, a, ai, n);
+    double mod_b = dotProduct(b, bi, b, bi, n);
     return dot / (sqrt(mod_a) * sqrt(mod_b));
 }
 
@@ -88,8 +88,8 @@ double cosine_dist(double* a, double* b, int n)
 
 // --------------------------------------------------
 
-void searchLayer(double* q, int d, Heap& top_k, int* indptr, int* level_offset, int lc, 
-                int* index, unordered_set<int>& visited, double** vect)
+void searchLayer(double* q, int u, int d, Heap& top_k, int* indptr, int* level_offset, int lc, 
+                int* index, unordered_set<int>& visited, double* vect)
 {
     Heap candidats = Heap(top_k.size);
     candidats.heap = top_k.heap;
@@ -110,7 +110,7 @@ void searchLayer(double* q, int d, Heap& top_k, int* indptr, int* level_offset, 
 
             if(visited.find(px) != visited.end() || px == -1) continue;
             visited.insert(px);
-            double dist = cosine_dist(vect[px], q, d);
+            double dist = cosine_dist(vect, px, q, u, d);
             if(dist < top_k.getMax() && !top_k.has_space()) continue;
             top_k.push(pid(px,dist));
             top_k.trim();
@@ -119,10 +119,10 @@ void searchLayer(double* q, int d, Heap& top_k, int* indptr, int* level_offset, 
     }
 } 
 
-int* queryHNSW(double* q, int d, int k, int ep, int* indptr, int* index, int* level_offset, int max_level, double** vect)
+int* queryHNSW(double* q, int u, int d, int k, int ep, int* indptr, int* index, int* level_offset, int max_level, double* vect)
 {
     Heap top_k = Heap(k);
-    top_k.push(pid(ep,cosine_dist(vect[ep], q, d)));
+    top_k.push(pid(ep,cosine_dist(vect, ep, q, u, d)));
     // cout << "pushing " << ep << " " << top_k.getMax() << endl;
     unordered_set<int> visited;
     visited.insert(ep);
@@ -130,7 +130,7 @@ int* queryHNSW(double* q, int d, int k, int ep, int* indptr, int* index, int* le
     for (int level = max_level-1; level >= 0; level--){
         // cout<< "level: " << level << endl;
         // cout << "----------------------level = " << level << endl;
-        searchLayer(q, d, top_k, indptr, level_offset, level, index, visited, vect);
+        searchLayer(q, u, d, top_k, indptr, level_offset, level, index, visited, vect);
         // cout << "visited " ;
         // for(auto it = visited.begin(); it != visited.end(); it++){
         //     cout << *it << " ";
@@ -145,6 +145,7 @@ int* queryHNSW(double* q, int d, int k, int ep, int* indptr, int* index, int* le
     }
     return ans;
 }
+
 
 int main(int argc, char const *argv[])
 {
@@ -163,14 +164,12 @@ int main(int argc, char const *argv[])
         {-0.014396, 0.033023, -0.012421, -0.027277, 0.017062}
     };
 
-    double** vect = new double*[n];
-    double** q = new double*[n];
+    double* vect = new double[n*d];
+    double* q = new double[n*d];
     for(int i = 0; i < n; i++){
-        vect[i] = new double[d];
-        q[i] = new double[d];
         for(int j = 0; j < d; j++){
-            vect[i][j] = a[i][j];
-            q[i][j] = a[i][j];
+            vect[i*d+j] = a[i][j];
+            q[i*d+j] = a[i][j];
         }
     }
 
@@ -180,7 +179,7 @@ int main(int argc, char const *argv[])
 
     for(int i=0; i<n; i++){
         cout << "finding top k for q[" << i << "] = \n";
-        int* ans = queryHNSW(q[i], d, k, ep, indptr, index, level_offset, max_level, vect);
+        int* ans = queryHNSW(q, i, d, k, ep, indptr, index, level_offset, max_level, vect);
         for(int j=0; j<k; j++){
             cout << ans[j] << " ";
         }

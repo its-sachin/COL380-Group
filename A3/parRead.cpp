@@ -36,27 +36,36 @@ int main(int argc, char **argv) {
         maxTextSize = maxTextSize*2;
         //cout<<maxTextSize<<endl;
         MPI_File_get_size(input, &filesize);
-        filesize--;
+        //cout<<" filesize "<<filesize<<endl;
         curRankSize = filesize/size;
+
         toStart = rank*curRankSize;
-        toEnd = (maxTextSize+(rank+1)*curRankSize) - 1;
-        toEndNoOffset = toEnd - maxTextSize;
+        toEnd = (maxTextSize+((rank+1)*curRankSize)) - 1;
+        toEndNoOffset =((rank+1)*curRankSize) - 1;;
         if(toEnd>=filesize-1){
             status = true;
             toEnd = filesize - 1;
         }
+        
 
         buff = (char*)malloc( ((toEnd  -toStart + 1) + 1)*sizeof(char));
+
+        
         MPI_File_read_at_all(input, toStart, buff, (toEnd  -toStart + 1) , MPI_CHAR, MPI_STATUS_IGNORE);
+
+        
         buff[(toEnd  -toStart + 1)] = '\0';
 
 
-       // cout<<"At rank "<<rank<<endl;
+        cout<<"At rank "<<rank<<endl;
 
-        //cout<<(toEndNoOffset-toStart)<<" "<<toEnd  -toStart<<endl;
+        //cout<<"mybuff \n "<<buff<<"\n mybuff end"<<endl;
+
+        //cout<<toStart<<" "<<(toEndNoOffset)<<" "<<toEnd<<endl;
+        //cout<<toStart<<" "<<(toEndNoOffset-toStart)<<" "<<toEnd  -toStart<<endl;
         //cout<<buff<<endl;
         realEnd = (toEnd  -toStart + 1);
-        for(int i = toEndNoOffset-toStart;i<((toEnd  -toStart + 1));i++){
+        for(int i = toEndNoOffset-toStart + 1;i<((toEnd  -toStart + 1));i++){
             if(buff[i]==' '||buff[i]=='\n'){
                 //cout<<"is SPace "<<rank<<endl;
                 realEnd = i;
@@ -64,6 +73,7 @@ int main(int argc, char **argv) {
                 break;
             }
         }
+        //cout<<realEnd<<endl;
         if(rank==size-1){
             status = true;
         }
