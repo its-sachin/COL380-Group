@@ -251,8 +251,8 @@ int main(int argc, char* argv[]){
 
     readMPI("dummy_bin/sizes.bin", read, 7, 1, 0, fs);
 
-    int n = read[0];
-    int ep = read[1];
+    int n = read[0]; // level file size
+    int ep = read[1]; // 
     int max_level = read[2];
     int s_level_offset = read[3];
     int s_index = read[4];
@@ -294,5 +294,23 @@ int main(int argc, char* argv[]){
         cout <<"]"<< endl;
     }
 
+    int sizeoftype = sizeof(int);
+    
+    std::ofstream outfile(output, std::ios::out | std::ios::binary);
+    if(rank == size -1 ){
+        writeAll(full, outfile, sizeoftype);
+    }
+
+
+    MPI_Barrier(MPI_COMM_WORLD);
+    outfile.seekp(sizeoftype*writeOffset, std::ios::beg);
+
+    for(int i=0; i<nums.size(); i++){
+        outfile.write((char*)&nums[i], sizeoftype);
+    }
+
+
+    outfile.close();
+    
     MPI_Finalize();
 }

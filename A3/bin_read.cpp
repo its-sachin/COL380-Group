@@ -105,15 +105,15 @@ int main(int argc, char* argv[]){
     
     MPI_File fs;
 
-    readMPI("dummy_bin/sizes.bin", read, 7, 1, 0, fs);
+    readMPI("sizes.bin", read, 7, 1, 0, fs);
 
-    int n = read[0];
-    int ep = read[1];
-    int max_level = read[2];
-    int s_level_offset = read[3];
-    int s_index = read[4];
-    int s_indptr = read[5];
-    int d = read[6];
+    int n = read[0]; // size of levels 
+    int ep = read[1]; // ep file value
+    int max_level = read[2]; // max level value
+    int s_level_offset = read[3]; // level offset size
+    int s_index = read[4]; // index size 
+    int s_indptr = read[5]; // indptr size
+    int d = read[6]; // vect bin per line size
 
     cout << rank << ": "<<"n: "<<n<<endl;
     cout << rank << ": "<< "ep: "<<ep<<endl;
@@ -124,7 +124,7 @@ int main(int argc, char* argv[]){
     cout << rank << ": "<<"d: "<<d<<endl;
 
     int* indptr = new int[s_indptr];
-    gatherMPI("dummy_bin/indptr.bin", indptr, s_indptr, size, rank, fs);
+    gatherMPI("indptr.bin", indptr, s_indptr, size, rank, fs);
 
     cout << rank << ": "<<"indptr: "<<endl;
     cout<< rank << ": ";
@@ -134,7 +134,7 @@ int main(int argc, char* argv[]){
     cout <<endl;
 
     int* index = new int[s_index];
-    gatherMPI("dummy_bin/index.bin", index, s_index, size, rank, fs);
+    gatherMPI("index.bin", index, s_index, size, rank, fs);
 
     cout<< rank << ": "<<"index: "<<endl;
     cout<< rank << ": ";
@@ -144,7 +144,7 @@ int main(int argc, char* argv[]){
     cout <<endl;
 
     int* level_offset = new int[s_level_offset];
-    gatherMPI("dummy_bin/level_offset.bin", level_offset, s_level_offset, size, rank, fs);
+    gatherMPI("level_offset.bin", level_offset, s_level_offset, size, rank, fs);
 
     cout<< rank << ": "<<"level_offset: "<<endl;
     cout<< rank << ": ";
@@ -166,7 +166,7 @@ int main(int argc, char* argv[]){
     // }
 
     double* q = new double[n*d];
-    gatherMPI("dummy_bin/vect.bin", q, n, d, size, rank, fs);
+    gatherMPI("vect.bin", q, n, d, size, rank, fs);
 
     cout<< rank << ": "<<"q: "<<endl;
     for(int i=0; i<n; i++){
