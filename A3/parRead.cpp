@@ -18,7 +18,7 @@ int main(int argc, char **argv) {
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     
     MPI_File_open(MPI_COMM_WORLD, argv[1], MPI_MODE_RDONLY, MPI_INFO_NULL, &input);
-    MPI_File_open(MPI_COMM_WORLD, "binOut", MPI_MODE_CREATE |MPI_MODE_WRONLY, MPI_INFO_NULL, &outFile);
+    MPI_File_open(MPI_COMM_WORLD, "vect.bin", MPI_MODE_CREATE |MPI_MODE_WRONLY, MPI_INFO_NULL, &outFile);
     
 
     
@@ -103,6 +103,7 @@ int main(int argc, char **argv) {
     //cout<<"At rank "<<rank<<endl;
     std::istringstream is( str);
 
+    
     vector<double> nums;
     double n;
     while( is >> n ) {
@@ -119,9 +120,43 @@ int main(int argc, char **argv) {
     //cout<<"Real rank size on rank "<<rank<<" is "<<allSizes[rank]<<endl;
     MPI_Allgather(&allSizes[rank], 1, MPI_INT, allSizes,1, MPI_INT, MPI_COMM_WORLD);
     
-    MPI_File_set_view(outFile, 0, MPI_DOUBLE, MPI_DOUBLE,"native", MPI_INFO_NULL);
+    //MPI_File_set_view(outFile, 0, MPI_DOUBLE, MPI_DOUBLE,"native", MPI_INFO_NULL);
     
+    int writeOffset = 0;
+    for (int i = 0; i < rank; i++)
+    {
+        writeOffset+=allSizes[i];
+    }
     
+
+
+    for (int i = 0; i < nums.size(); i++)
+    {
+        //cout<<nums[i]<<endl;
+        MPI_File_write_at(outFile, writeOffset + (i*(__SIZEOF_DOUBLE__)), &nums[i],sizeof(double), MPI_DOUBLE, MPI_STATUS_IGNORE);
+    }
+    
+    //double data = 1.53;
+    // char* data;
+    // data = (char*)malloc( ((1)*sizeof(char)));
+    // data[0] = 'a';
+    // if(rank==0){
+    //     MPI_File_write_at(outFile, 0, &data,sizeof(char), MPI_CHAR, MPI_STATUS_IGNORE);
+    //     // char* newData;
+    //     // data = (char*)malloc( ((1)*sizeof(char)));
+    //     // MPI_File_read_at(outFile, (sizeof(char))*writeOffset, &newData,sizeof(char), MPI_CHAR, MPI_STATUS_IGNORE);
+    //     // cout<<newData<<endl;
+    //     //MPI_File_write_at(MPI_File fh, MPI_Offset offset, void *buf,int count, MPI_Datatype datatype, MPI_Status *status)
+    // }
+
+    // MPI_File_write(outFile, &data, sizeof(double), MPI_DOUBLE, MPI_STATUS_IGNORE);
+    // MPI_File_set_view(outFile, sizeof(double), MPI_DOUBLE, MPI_DOUBLE,"native", MPI_INFO_NULL);
+    
+    //  data = 1.54;
+    // MPI_File_write(outFile, &data, sizeof(double), MPI_DOUBLE, MPI_STATUS_IGNORE);
+    // double newData;
+    // MPI_File_read(outFile, &newData, sizeof(double), MPI_DOUBLE, MPI_STATUS_IGNORE);
+    // cout<<newData;
     // for (int i = 0; i < size; i++)
     // {
     //     cout<<i<<" Received "<<allSizes[i]<<" in rank "<<rank<< " ";
@@ -134,18 +169,18 @@ int main(int argc, char **argv) {
     // }
     //cout<<endl;
     
-    if(rank==0){
-        int BUFSIZE = 0;
-        MPI_Offset writeAt = BUFSIZE * sizeof(double);
-        // for (int i = 0; i < nums.size(); i++)
-        // {
-            //cout<<i<<endl;
+    // if(rank==0){
+    //     int BUFSIZE = 0;
+    //     MPI_Offset writeAt = BUFSIZE * sizeof(double);
+    //     // for (int i = 0; i < nums.size(); i++)
+    //     // {
+    //         //cout<<i<<endl;
             
-            // cout<<ierr<<endl;
-            // MPI_File_write(outFile, reinterpret_cast<char*>( &nums[i] ), BUFSIZE, MPI_DOUBLE, MPI_STATUS_IGNORE);
-            BUFSIZE++;
-        // }    
-    }
+    //         // cout<<ierr<<endl;
+    //         // MPI_File_write(outFile, reinterpret_cast<char*>( &nums[i] ), BUFSIZE, MPI_DOUBLE, MPI_STATUS_IGNORE);
+    //         BUFSIZE++;
+    //     // }    
+    // }
 
     //vector<int> vec;
     
