@@ -3,34 +3,34 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
-    
+#include<bits/stdc++.h>
+
 using namespace std;
     
 int main(int argc, char **argv) {
     
-    MPI_File input;
+    MPI_File input,outFile;
     int rank, size;
     int maxTextSize = 5;
-    
     MPI_Init(&argc,&argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     
     MPI_File_open(MPI_COMM_WORLD, argv[1], MPI_MODE_RDONLY, MPI_INFO_NULL, &input);
+    MPI_File_open(MPI_COMM_WORLD, "binOut", MPI_MODE_CREATE | MPI_MODE_RDWR, MPI_INFO_NULL, &outFile);
+
+    
 
     
     MPI_Offset toStart,toEnd,filesize,toEndNoOffset;
     int curRankSize;
     char *buff;
-    // buff = (char*)malloc( (2)*sizeof(char));
-    // MPI_File_read_at_all(input, 0, buff, 1 , MPI_CHAR, MPI_STATUS_IGNORE);
-    // cout<<buff<<endl;
     bool status = false;
     int start = 0;
     int realEnd;
     while (!status)
     {
-        free(buff);
+        //free(buff);
         status = false;
         //status = true;
         maxTextSize = maxTextSize*2;
@@ -57,7 +57,7 @@ int main(int argc, char **argv) {
         buff[(toEnd  -toStart + 1)] = '\0';
 
 
-        cout<<"At rank "<<rank<<endl;
+       
 
         //cout<<"mybuff \n "<<buff<<"\n mybuff end"<<endl;
 
@@ -89,11 +89,65 @@ int main(int argc, char **argv) {
             }
         }
     }
+
+     cout<<"At rank "<<rank<<endl;
+    string str = "";
     for(int i = start;i<realEnd;i++){
-        cout<<buff[i];
+        str+=buff[i];
+        //cout<<buff[i];
     }
 
-    cout<<endl;
+    //cout<<str<<endl;
+
+    //cout<<str<<endl;
+    //cout<<"At rank "<<rank<<endl;
+    std::istringstream is( str);
+
+    vector<double> nums;
+    double n;
+    while( is >> n ) {
+        nums.push_back(n);
+        //cout<<n<<endl;
+    }
+    int *allSizes = (int *)malloc(sizeof(int) * size);
+
+    //vector<int> allSizes(size);
+
+    allSizes[rank] = nums.size();
+
+    
+    //cout<<"Real rank size on rank "<<rank<<" is "<<allSizes[rank]<<endl;
+    MPI_Allgather(&allSizes[rank], 1, MPI_INT, allSizes,1, MPI_INT, MPI_COMM_WORLD);
+    
+    
+    
+    // for (int i = 0; i < size; i++)
+    // {
+    //     cout<<i<<" Received "<<allSizes[i]<<" in rank "<<rank<<endl;
+    // }
+    
+    // for (auto &&i : allSizes)
+    // {
+    //     cout<<i<<endl;
+    // }
+    //cout<<endl;
+    
+    // if(rank==0){
+    //     int BUFSIZE = 0;
+    //     for (int i = 0; i < nums.size(); i++)
+    //     {
+    //         cout<<i<<endl;
+    //         MPI_File_set_view(outFile, rank * (MPI_Offset)BUFSIZE * sizeof(double), MPI_DOUBLE, MPI_DOUBLE,
+    //                                     "native", MPI_INFO_NULL);
+    //         MPI_File_write(outFile, reinterpret_cast<char*>( &nums[i] ), BUFSIZE, MPI_DOUBLE, MPI_STATUS_IGNORE);
+    //         BUFSIZE++;
+    //     }
+        
+        
+    // }
+
+    //vector<int> vec;
+    
     //cout<<"End at rank "<<rank<<endl;    
     // if (ierr) {
     //     if (rank == 0) fprintf(stderr, "%s: Couldn't open file %s\n", argv[0], argv[1]);
@@ -109,8 +163,6 @@ int main(int argc, char **argv) {
     // }
         
     MPI_File_close(&input);
-    // MPI_File_close(&out);
-    
     MPI_Finalize();
     return 0;
 }
