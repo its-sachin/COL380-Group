@@ -87,7 +87,6 @@ void gatherMPI(const char *filename, double* arr, int n, int d, int size, int ra
     delete (temp);
 }
 
-
 int main(int argc, char* argv[]){
 
     int rank, size;
@@ -153,20 +152,20 @@ int main(int argc, char* argv[]){
     }
     cout <<endl;
 
-    double* vect = new double[n*d];
-    gatherMPI("dummy_bin/vect.bin", vect, n, d, size, rank, fs);
+    // double* vect = new double[n*d];
+    // gatherMPI(argv[1], vect, n, d, size, rank, fs);
 
-    cout<< rank << ": "<<"vect: "<<endl;
-    for(int i=0; i<n; i++){
-        cout<< rank << ": ";
-        for(int j=0; j<d; j++){
-            cout<<vect[i*d + j]<<" ";
-        }
-        cout<<endl;
-    }
+    // cout<< rank << ": "<<"vect: "<<endl;
+    // for(int i=0; i<n; i++){
+    //     cout<< rank << ": ";
+    //     for(int j=0; j<d; j++){
+    //         cout<<vect[i*d + j]<<" ";
+    //     }
+    //     cout<<endl;
+    // }
 
     double* q = new double[n*d];
-    gatherMPI("dummy_bin/vect.bin", q, n, d, size, rank, fs);
+    gatherMPI("vect.bin", q, n, d, size, rank, fs);
 
     cout<< rank << ": "<<"q: "<<endl;
     for(int i=0; i<n; i++){

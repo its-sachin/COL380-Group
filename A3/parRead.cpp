@@ -6,6 +6,12 @@
 #include<bits/stdc++.h>
 
 using namespace std;
+
+void writeAll(int n, std::ofstream &out, int size){
+    for(int i =0; i<n ;i++){
+        out.write((char*)&i, size);
+    }
+}
     
 int main(int argc, char **argv) {
     
@@ -18,7 +24,7 @@ int main(int argc, char **argv) {
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     
     MPI_File_open(MPI_COMM_WORLD, argv[1], MPI_MODE_RDONLY, MPI_INFO_NULL, &input);
-    MPI_File_open(MPI_COMM_WORLD, "vect.bin", MPI_MODE_CREATE |MPI_MODE_WRONLY, MPI_INFO_NULL, &outFile);
+    // MPI_File_open(MPI_COMM_WORLD, "vect.bin", MPI_MODE_CREATE |MPI_MODE_WRONLY, MPI_INFO_NULL, &outFile);
     
 
     
@@ -123,18 +129,56 @@ int main(int argc, char **argv) {
     //MPI_File_set_view(outFile, 0, MPI_DOUBLE, MPI_DOUBLE,"native", MPI_INFO_NULL);
     
     int writeOffset = 0;
+    int full = 0;
+     
     for (int i = 0; i < rank; i++)
     {
+        cout << allSizes[i] << " ";
         writeOffset+=allSizes[i];
+        full += allSizes[i];
     }
+
+    std::ofstream outfile("vect.bin", std::ios::out | std::ios::binary);
+    if(rank == size -1 ){
+        writeAll(full, outfile, sizeof(double));
+    }
+
+
+    MPI_Barrier(MPI_COMM_WORLD);
+    outfile.seekp(sizeof(double)*writeOffset, std::ios::beg);
+
+    for(int i=0; i<nums.size(); i++){
+        outfile.write((char*)&nums[i], sizeof(double));
+    }
+
+    outfile.close();
+
+    // MPI_File_seek(outFile, writeOffset*sizeof(double), MPI_SEEK_SET );
+    // if(rank==0){
+    //     double* a = (double*)malloc( full*sizeof(double));
+    //     MPI_File_write(outFile, a, full*sizeof(double), MPI_DOUBLE, MPI_STATUS_IGNORE);
+    //     MPI_File_seek(outFile, 0, MPI_SEEK_SET );
+    // }
+
+    // MPI_Barrier(MPI_COMM_WORLD);
+
+    // double* t = new double[nums.size()];
+
+    // for(int i=0; i<nums.size();i++){
+    //     t[i] = nums[i];
+    // }
+    // MPI_File_write(outFile, t, nums.size()*sizeof(double), MPI_DOUBLE, MPI_STATUS_IGNORE);
+
     
 
+    // MPI_Barrier(MPI_COMM_WORLD);
 
-    for (int i = 0; i < nums.size(); i++)
-    {
-        //cout<<nums[i]<<endl;
-        MPI_File_write_at(outFile, writeOffset + (i*(__SIZEOF_DOUBLE__)), &nums[i],sizeof(double), MPI_DOUBLE, MPI_STATUS_IGNORE);
-    }
+    // for (int i = 0; i < nums.size(); i++)
+    // {
+    //     //cout<<nums[i]<<endl;
+    //     // cout << "rank: " <<rank << " offset: " <<   (writeOffset + i)*(__SIZEOF_DOUBLE__) << " val: " << nums[i] << endl; 
+    //     MPI_File_write_at(outFile, (writeOffset + i)*(__SIZEOF_DOUBLE__), &t[i],sizeof(double), MPI_DOUBLE, MPI_STATUS_IGNORE);
+    // }
     
     //double data = 1.53;
     // char* data;
@@ -199,6 +243,7 @@ int main(int argc, char **argv) {
     // }
         
     MPI_File_close(&input);
+    // MPI_File_close(&outFile);
     MPI_Finalize();
     return 0;
 }

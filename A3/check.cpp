@@ -40,15 +40,35 @@ int main(int argc, char* argv[]){
     // MPI_Type_contiguous(d, MPI_INT, &row);
     // MPI_Type_commit(&row);
 
+    int sizee = sizeof(double);
+    MPI_Datatype a = MPI_DOUBLE;
+
+
     MPI_File fs;
-    MPI_File_open(MPI_COMM_WORLD, "binOut.bin",MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fs);
-    MPI_File_set_view(fs, 0, MPI_INT, MPI_INT, "native", MPI_INFO_NULL);
-    
+    MPI_File_open(MPI_COMM_WORLD, "vect.bin",MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fs);
+    MPI_File_set_view(fs, rank*3*sizee, a, a, "native", MPI_INFO_NULL);
+
+    double aa[3] = {1,2,4};
+    MPI_File_write(fs, aa, sizee, a, MPI_STATUS_IGNORE);
+    MPI_File_write(fs, aa, sizee, a, MPI_STATUS_IGNORE);
+    MPI_File_write(fs, aa, sizee, a, MPI_STATUS_IGNORE);
+    // vector<int> buff[3] = {1,2,3};
+    // for(int i=0; i<3;i++)buff[i]+=rank;
+
+    // if(rank==0){
+    //     MPI_File_write(fs, buff, 3*sizee, a, MPI_STATUS_IGNORE);
+    //     MPI_File_write(fs, buff, 3*sizee, a, MPI_STATUS_IGNORE);
+        
+    // }
+
+    // MPI_Barrier(MPI_COMM_WORLD);
+
+    // MPI_File_write(fs, buff, 3*sizee,a, MPI_STATUS_IGNORE);
     // int* arr = new int[6];
 
     // int* temp = new int[3];
     // MPI_File_read(fs, temp, 1, row, MPI_STATUS_IGNORE);
-    // MPI_File_close(&fs);
+    MPI_File_close(&fs);
 
     // cout << endl;
     // for(int i=0; i<3; i++)cout << rank << " temp[" << i << "] : " << temp[i] << endl;

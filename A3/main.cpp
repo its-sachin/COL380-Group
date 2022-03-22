@@ -1,5 +1,6 @@
 #include<bits/stdc++.h>
 #include <mpi.h>
+// #include 
 
 using namespace std;
 
@@ -281,6 +282,7 @@ int main(int argc, char* argv[]){
 
     int k = 3;
 
+    #pragma omp parallel num_threads(4)
     for(int i=start; i<end; i++){
         cout << rank << ": " <<"i: " << i << endl;
         int* ans = queryHNSW(q, i, d, k, ep, indptr, index, level_offset, max_level, vect);
