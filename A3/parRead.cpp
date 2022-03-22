@@ -132,19 +132,18 @@ int main(int argc, char **argv) {
     // }
     //cout<<endl;
     
-    // if(rank==0){
-    //     int BUFSIZE = 0;
-    //     for (int i = 0; i < nums.size(); i++)
-    //     {
-    //         cout<<i<<endl;
-    //         MPI_File_set_view(outFile, rank * (MPI_Offset)BUFSIZE * sizeof(double), MPI_DOUBLE, MPI_DOUBLE,
-    //                                     "native", MPI_INFO_NULL);
-    //         MPI_File_write(outFile, reinterpret_cast<char*>( &nums[i] ), BUFSIZE, MPI_DOUBLE, MPI_STATUS_IGNORE);
-    //         BUFSIZE++;
-    //     }
-        
-        
-    // }
+    if(rank==0){
+        int BUFSIZE = 0;
+        MPI_Offset writeAt = BUFSIZE * sizeof(double);
+        // for (int i = 0; i < nums.size(); i++)
+        // {
+            //cout<<i<<endl;
+            int ierr = MPI_File_set_view(outFile, writeAt, MPI_DOUBLE, MPI_DOUBLE,"native", MPI_INFO_NULL);
+            cout<<ierr<<endl;
+            // MPI_File_write(outFile, reinterpret_cast<char*>( &nums[i] ), BUFSIZE, MPI_DOUBLE, MPI_STATUS_IGNORE);
+            BUFSIZE++;
+        // }    
+    }
 
     //vector<int> vec;
     
