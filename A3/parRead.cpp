@@ -23,7 +23,9 @@ int main(int argc, char **argv) {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     
-    MPI_File_open(MPI_COMM_WORLD, argv[1], MPI_MODE_RDONLY, MPI_INFO_NULL, &input);
+    string fullFilePath = string(argv[1])+"/"+string(argv[2]);
+    
+    MPI_File_open(MPI_COMM_WORLD, fullFilePath.c_str(), MPI_MODE_RDONLY, MPI_INFO_NULL, &input);
     // MPI_File_open(MPI_COMM_WORLD, "vect.bin", MPI_MODE_CREATE |MPI_MODE_WRONLY, MPI_INFO_NULL, &outFile);
     
 
@@ -138,18 +140,27 @@ int main(int argc, char **argv) {
         full += allSizes[i];
     }
 
-    std::ofstream outfile("vect.bin", std::ios::out | std::ios::binary);
+    int sizeoftype = sizeof(int);
+    if(argv[2]=="vect.txt"){
+        sizeoftype = sizeof(double);
+    }
+
+    string myString = argv[2];
+    string output = (myString.substr(0, myString.size()-3))+"bin";
+    
+    std::ofstream outfile(output, std::ios::out | std::ios::binary);
     if(rank == size -1 ){
-        writeAll(full, outfile, sizeof(double));
+        writeAll(full, outfile, sizeoftype);
     }
 
 
     MPI_Barrier(MPI_COMM_WORLD);
-    outfile.seekp(sizeof(double)*writeOffset, std::ios::beg);
+    outfile.seekp(sizeoftype*writeOffset, std::ios::beg);
 
     for(int i=0; i<nums.size(); i++){
-        outfile.write((char*)&nums[i], sizeof(double));
+        outfile.write((char*)&nums[i], sizeoftype);
     }
+
 
     outfile.close();
 
