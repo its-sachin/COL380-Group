@@ -289,12 +289,14 @@ int main(int argc, char* argv[]){
     int k = 3;
 
     vector<string> answers(end-start);
+    int totalLen = 0;
     // #pragma omp parallel num_threads(4)
     for(int i=start; i<end; i++){
         //cout << rank << ": " <<"i: " << i << endl;
         string ans = queryHNSW(q, i, d, k, ep, indptr, index, level_offset, max_level, vect) + "\n";
         //cout<<ans;
         answers[i-start] = ans;
+        totalLen+=ans.size();
         // cout << "[" <<rank << ": top k for q[" << i << "] =";
         // for(int j=0; j<k; j++){
         //     cout << ans[j] << " ";
@@ -302,11 +304,11 @@ int main(int argc, char* argv[]){
         // cout <<"]"<< endl;
     }
 
-    int totalLen = 0;
+    
     for (int i = 0; i < answers.size(); i++)
     {
-        cout<<answers[0];
-        totalLen+=answers.size();
+        cout<<answers[i];
+        
     }
 
     int *allSizes = new int[size];
@@ -327,24 +329,20 @@ int main(int argc, char* argv[]){
     std::ofstream outfile(output, std::ios::out);
     
 
-    if(rank == size -1){
+    if(rank == size-1){
         writeAll(writeOffset, outfile, sizeoftype);
     }
 
     
     MPI_Barrier(MPI_COMM_WORLD);
+    
     outfile.seekp(writeOffset, std::ios::beg);
 
     for (int i = 0; i < answers.size(); i++)
-    {
-        
+    {   
         outfile.write(answers[i].c_str(),answers[i].size());
-        //outfile.write((char*)&nums[i], sizeoftype);
     }
     
-    // for(int i=0; i<nums.size(); i++){
-    //     outfile.write((char*)&nums[i], sizeoftype);
-    // }
 
 
     outfile.close();
