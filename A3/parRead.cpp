@@ -13,11 +13,6 @@ void writeAll(int n, std::ofstream &out, int size){
     }
 }
 
-void print(vector<int> &a, int rank){
-    cout << "RANK : " << rank << ": ";
-    for(int i=0; i<a.size(); i++)cout << a[i] << " ";
-    cout << endl;
-}
     
 int main(int argc, char **argv) {
     // cout<<argv[1]<<endl;
@@ -30,16 +25,15 @@ int main(int argc, char **argv) {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-    vector<string> files = {"level.txt","ep.txt","max_level.txt","level_offset.txt","index.txt","indptr.txt","vect.txt"};
-    vector<int> criticalData;
-        
-    for (int i = 0; i < files.size(); i++)
+    vector<string> files = {"level.txt","level_offset.txt","index.txt","indptr.txt","vect.txt"};
+    int* sizes = new int[7];
+
+    for (int f = 0; f < files.size(); f++)
     {        
         MPI_File input;
-        
         int maxTextSize = 5;
         
-        string fullFilePath = string(argv[1])+"/"+string(files[i]);
+        string fullFilePath = string(argv[1])+"/"+string(files[f]);
         
         MPI_File_open(MPI_COMM_WORLD, fullFilePath.c_str(), MPI_MODE_RDONLY, MPI_INFO_NULL, &input);
         // MPI_File_open(MPI_COMM_WORLD, "vect.bin", MPI_MODE_CREATE |MPI_MODE_WRONLY, MPI_INFO_NULL, &outFile);
@@ -113,60 +107,38 @@ int main(int argc, char **argv) {
             //cout<<buff[i];
         }
 
-        //cout<<str<<endl;
+        MPI_File_close(&input);
 
-        //cout<<str<<endl;
-        //cout<<"At rank "<<rank<<endl;
         std::istringstream is( str);
+        string myString = files[f];
+        string output =  (myString.substr(0, myString.size()-3))+"bin";
+        std::ofstream outfile(output, std::ios::out | std::ios::binary);
+        int writeOffset = 0;
+        int *allSizes = new int[size];
+        int Val;
 
         int sizeoftype = sizeof(int);
-        if(files[i]=="vect.txt"){
-            sizeoftype = sizeof(double);
-        }
 
-        if(files[i]=="vect.txt"){
+        if(files[f]=="vect.txt"){
         
-
+            sizeoftype = sizeof(double);
             vector<double> nums;
             double n;
             while( is >> n ) {
                 nums.push_back(n);
-                //cout<<n<<endl;
             }
-            int *allSizes = (int *)malloc(sizeof(int) * size);
-
-
-            //vector<int> allSizes(size);
 
             allSizes[rank] = nums.size();
 
-            
-            //cout<<"Real rank size on rank "<<rank<<" is "<<allSizes[rank]<<endl;
             MPI_Allgather(&allSizes[rank], 1, MPI_INT, allSizes,1, MPI_INT, MPI_COMM_WORLD);
-            
-            //MPI_File_set_view(outFile, 0, MPI_DOUBLE, MPI_DOUBLE,"native", MPI_INFO_NULL);
-            
-            int writeOffset = 0;
-            int full = 0;
-            
+
             for (int i = 0; i < rank; i++)
             {
-                // cout << allSizes[i] << " ";
                 writeOffset+=allSizes[i];
-                full += allSizes[i];
             }
-
             
-            
-            criticalData.push_back(full);
-        
-
-            string myString = files[i];
-            string output =  (myString.substr(0, myString.size()-3))+"bin";
-            
-            std::ofstream outfile(output, std::ios::out | std::ios::binary);
-            if(rank == size -1 ){
-                writeAll(full, outfile, sizeoftype);
+            if(rank == size -1){
+                writeAll(writeOffset, outfile, sizeoftype);
             }
 
 
@@ -176,56 +148,28 @@ int main(int argc, char **argv) {
             for(int i=0; i<nums.size(); i++){
                 outfile.write((char*)&nums[i], sizeoftype);
             }
-            
-
             outfile.close();
-        } else{
-
+            
+        } else{ 
 
             vector<int> nums;
-            double n;
+            int n;
             while( is >> n ) {
                 nums.push_back(n);
-                //cout<<n<<endl;
             }
-            int *allSizes = (int *)malloc(sizeof(int) * size);
-
-            //vector<int> allSizes(size);
 
             allSizes[rank] = nums.size();
-
             
-            //cout<<"Real rank size on rank "<<rank<<" is "<<allSizes[rank]<<endl;
             MPI_Allgather(&allSizes[rank], 1, MPI_INT, allSizes,1, MPI_INT, MPI_COMM_WORLD);
-            
-            //MPI_File_set_view(outFile, 0, MPI_DOUBLE, MPI_DOUBLE,"native", MPI_INFO_NULL);
-            
-            int writeOffset = 0;
-            int full = 0;
             
             for (int i = 0; i < rank; i++)
             {
-                cout << allSizes[i] << " ";
                 writeOffset+=allSizes[i];
-                full += allSizes[i];
             }
 
-            if(i==1||i==2){
-                criticalData.push_back(nums[0]);
-            }else{
-                criticalData.push_back(full);
-            }
-            print(criticalData, rank);
-            
-            
-            string myString = files[i];
-            string output =  (myString.substr(0, myString.size()-3))+"bin";
-            
-            std::ofstream outfile(output, std::ios::out | std::ios::binary);
             if(rank == size -1 ){
-                writeAll(full, outfile, sizeoftype);
+                writeAll(writeOffset, outfile, sizeoftype);
             }
-
 
             MPI_Barrier(MPI_COMM_WORLD);
             outfile.seekp(sizeoftype*writeOffset, std::ios::beg);
@@ -233,19 +177,33 @@ int main(int argc, char **argv) {
             for(int i=0; i<nums.size(); i++){
                 outfile.write((char*)&nums[i], sizeoftype);
             }
-            
 
             outfile.close();
+            // Val = nums[0];
 
         }
-
-        MPI_File_close(&input);
-        // MPI_File_close(&outFile);
+        sizes[f+2] = writeOffset + allSizes[rank];
     }
+
+    if(rank == size - 1){
+        sizes[6] /= sizes[2];
+        sizes[0] = sizes[2];
+
+        ifstream input;
+
+        files = {"ep.txt","max_level.txt"};
+        for(int f=0; f<2; f++){
+            string fullFilePath = string(argv[1])+"/"+string(files[f]);
+            input.open(fullFilePath);
+            int k;
+            input >>k;
+            sizes[f+1] = k;
+            input.close();
+        }
+
+    }
+
     MPI_Finalize();
-
-
-
 
     return 0;
 }

@@ -105,7 +105,7 @@ int main(int argc, char* argv[]){
     
     MPI_File fs;
 
-    readMPI("sizes.bin", read, 7, 1, 0, fs);
+    readMPI("dummy_bin/sizes.bin", read, 7, 1, 0, fs);
 
     int n = read[0]; // size of levels 
     int ep = read[1]; // ep file value
