@@ -70,6 +70,11 @@ class Heap{
         cout << endl;
     }
 };
+void writeAll(int n, std::ofstream &out, int size){
+    for(int i =0; i<n ;i++){
+        out.write((char*)&i, size);
+    }
+}
 
 double dotProduct(double* a, int ai, double* b, int bi, int n)
 {
@@ -122,7 +127,7 @@ void searchLayer(double* q, int u, int d, Heap& top_k, int* indptr, int* level_o
     }
 } 
 
-int* queryHNSW(double* q, int u, int d, int k, int ep, int* indptr, int* index, int* level_offset, int max_level, double* vect)
+string queryHNSW(double* q, int u, int d, int k, int ep, int* indptr, int* index, int* level_offset, int max_level, double* vect)
 {
     Heap top_k = Heap(k);
     top_k.push(pid(ep,cosine_dist(vect, ep, q, u, d)));
@@ -142,9 +147,9 @@ int* queryHNSW(double* q, int u, int d, int k, int ep, int* indptr, int* index, 
         // cout << "Size: " << top_k.getSize() << endl;
     }
     // top_k.print();
-    int* ans = new int[k];
+    string ans = "";
     for(int i = k-1; i >= 0; i--){
-        ans[i] = top_k.pop().first;
+        ans += to_string(top_k.pop().first) + " ";
     }
     return ans;
 }
@@ -283,31 +288,63 @@ int main(int argc, char* argv[]){
 
     int k = 3;
 
+    vector<string> answers(end-start);
     // #pragma omp parallel num_threads(4)
     for(int i=start; i<end; i++){
-        cout << rank << ": " <<"i: " << i << endl;
-        int* ans = queryHNSW(q, i, d, k, ep, indptr, index, level_offset, max_level, vect);
-        cout << "[" <<rank << ": top k for q[" << i << "] =";
-        for(int j=0; j<k; j++){
-            cout << ans[j] << " ";
-        }
-        cout <<"]"<< endl;
+        //cout << rank << ": " <<"i: " << i << endl;
+        string ans = queryHNSW(q, i, d, k, ep, indptr, index, level_offset, max_level, vect) + "\n";
+        //cout<<ans;
+        answers[i-start] = ans;
+        // cout << "[" <<rank << ": top k for q[" << i << "] =";
+        // for(int j=0; j<k; j++){
+        //     cout << ans[j] << " ";
+        // }
+        // cout <<"]"<< endl;
     }
 
-    int sizeoftype = sizeof(int);
+    int totalLen = 0;
+    for (int i = 0; i < answers.size(); i++)
+    {
+        cout<<answers[0];
+        totalLen+=answers.size();
+    }
+
+    int *allSizes = new int[size];
+
+    allSizes[rank] = totalLen;
+
+    MPI_Allgather(&allSizes[rank], 1, MPI_INT, allSizes,1, MPI_INT, MPI_COMM_WORLD);
+
+    int writeOffset = 0;
+    for (int i = 0; i < rank; i++)
+    {
+        writeOffset+=allSizes[i];
+    }
+    int sizeoftype = sizeof(char);
     
-    std::ofstream outfile(output, std::ios::out | std::ios::binary);
-    if(rank == size -1 ){
-        writeAll(full, outfile, sizeoftype);
+
+    string output =  "finaloutput";
+    std::ofstream outfile(output, std::ios::out);
+    
+
+    if(rank == size -1){
+        writeAll(writeOffset, outfile, sizeoftype);
     }
 
-
+    
     MPI_Barrier(MPI_COMM_WORLD);
-    outfile.seekp(sizeoftype*writeOffset, std::ios::beg);
+    outfile.seekp(writeOffset, std::ios::beg);
 
-    for(int i=0; i<nums.size(); i++){
-        outfile.write((char*)&nums[i], sizeoftype);
+    for (int i = 0; i < answers.size(); i++)
+    {
+        
+        outfile.write(answers[i].c_str(),answers[i].size());
+        //outfile.write((char*)&nums[i], sizeoftype);
     }
+    
+    // for(int i=0; i<nums.size(); i++){
+    //     outfile.write((char*)&nums[i], sizeoftype);
+    // }
 
 
     outfile.close();
