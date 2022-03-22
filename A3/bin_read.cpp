@@ -36,12 +36,12 @@ void gatherMPI(const char *filename, int* arr, int len, int size, int rank, MPI_
         for(int i=0; i<left; i++){
             temp[i] = temp[len/size + i];
         }
+    }
 
-        MPI_Bcast(temp, left, MPI_INT, size-1, MPI_COMM_WORLD);
+    MPI_Bcast(temp, left, MPI_INT, size-1, MPI_COMM_WORLD);
         for(int i=0; i<left; i++){
             arr[size*(len/size) + i] = temp[i];
         }
-    }
 
     delete (temp);
 }
@@ -64,13 +64,14 @@ void gatherMPI(const char *filename, double* arr, int n, int d, int size, int ra
         end = n;
     }
 
-    double *temp = new double[(end-start)*d];
+    double *temp = new double[(n + end-start)*d];
     MPI_File_read(fs, temp, end-start, row, MPI_STATUS_IGNORE);
 
     MPI_File_close(&fs);
     MPI_Allgather(temp, n/size, row, arr, n/size, row, MPI_COMM_WORLD);
 
-    int left = end - start - n/size;
+    int left = n - (size-1)*(n/size) - n/size;
+    // cout << "left: " << left<<endl;/
     if(left > 0){
         for(int i=0; i<left; i++){
             for(int j=0; j<d; j++)
@@ -165,7 +166,7 @@ int main(int argc, char* argv[]){
     // }
 
     double* q = new double[n*d];
-    gatherMPI("vect.bin", q, n, d, size, rank, fs);
+    gatherMPI("dummy_bin/vect.bin", q, n, d, size, rank, fs);
 
     cout<< rank << ": "<<"q: "<<endl;
     for(int i=0; i<n; i++){

@@ -210,13 +210,14 @@ void gatherMPI(const char *filename, double* arr, int n, int d, int size, int ra
         end = n;
     }
 
-    double *temp = new double[(end-start)*d];
+    double *temp = new double[(n + end-start)*d];
     MPI_File_read(fs, temp, end-start, row, MPI_STATUS_IGNORE);
 
     MPI_File_close(&fs);
     MPI_Allgather(temp, n/size, row, arr, n/size, row, MPI_COMM_WORLD);
 
-    int left = end - start - n/size;
+    int left = n - (size-1)*(n/size) - n/size;
+    // cout << "left: " << left<<endl;/
     if(left > 0){
         for(int i=0; i<left; i++){
             for(int j=0; j<d; j++)
@@ -282,7 +283,7 @@ int main(int argc, char* argv[]){
 
     int k = 3;
 
-    #pragma omp parallel num_threads(4)
+    // #pragma omp parallel num_threads(4)
     for(int i=start; i<end; i++){
         cout << rank << ": " <<"i: " << i << endl;
         int* ans = queryHNSW(q, i, d, k, ep, indptr, index, level_offset, max_level, vect);
