@@ -36,31 +36,31 @@ int main(int argc, char* argv[]){
     // }
 
     int d = 3;
-    MPI_Datatype row;
-    MPI_Type_contiguous(d, MPI_INT, &row);
-    MPI_Type_commit(&row);
+    // MPI_Datatype row;
+    // MPI_Type_contiguous(d, MPI_INT, &row);
+    // MPI_Type_commit(&row);
 
     MPI_File fs;
-    MPI_File_open(MPI_COMM_WORLD, "dummy_bin/indptr.bin", MPI_MODE_RDONLY, MPI_INFO_NULL, &fs);
-    MPI_File_set_view(fs, rank*3*4, row, MPI_INT, "native", MPI_INFO_NULL);
+    MPI_File_open(MPI_COMM_WORLD, "binOut.bin",MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fs);
+    MPI_File_set_view(fs, 0, MPI_INT, MPI_INT, "native", MPI_INFO_NULL);
     
-    int* arr = new int[6];
+    // int* arr = new int[6];
 
-    int* temp = new int[3];
-    MPI_File_read(fs, temp, 1, row, MPI_STATUS_IGNORE);
-    MPI_File_close(&fs);
+    // int* temp = new int[3];
+    // MPI_File_read(fs, temp, 1, row, MPI_STATUS_IGNORE);
+    // MPI_File_close(&fs);
 
-    cout << endl;
-    for(int i=0; i<3; i++)cout << rank << " temp[" << i << "] : " << temp[i] << endl;
+    // cout << endl;
+    // for(int i=0; i<3; i++)cout << rank << " temp[" << i << "] : " << temp[i] << endl;
 
+    // // MPI_Allgather(temp, 1, row, arr, 1, row, MPI_COMM_WORLD);
     // MPI_Allgather(temp, 1, row, arr, 1, row, MPI_COMM_WORLD);
-    MPI_Allgather(temp, 1, row, arr, 1, row, MPI_COMM_WORLD);
 
-    for(int i=0; i<2; i++){
-        for(int j=0; j<3; j++){
-            cout << rank << " arr[" << i << "][" << j << "] : " << arr[2*i + j] << endl;
-        }
-    }
+    // for(int i=0; i<2; i++){
+    //     for(int j=0; j<3; j++){
+    //         cout << rank << " arr[" << i << "][" << j << "] : " << arr[2*i + j] << endl;
+    //     }
+    // }
 
     MPI_Finalize();
 }

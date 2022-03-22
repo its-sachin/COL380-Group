@@ -9,7 +9,8 @@ using namespace std;
     
 int main(int argc, char **argv) {
     
-    MPI_File input,outFile;
+    MPI_File input;
+    MPI_File outFile;
     int rank, size;
     int maxTextSize = 5;
     MPI_Init(&argc,&argv);
@@ -17,8 +18,7 @@ int main(int argc, char **argv) {
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     
     MPI_File_open(MPI_COMM_WORLD, argv[1], MPI_MODE_RDONLY, MPI_INFO_NULL, &input);
-    MPI_File_open(MPI_COMM_WORLD, "binOut", MPI_MODE_CREATE | MPI_MODE_RDWR, MPI_INFO_NULL, &outFile);
-
+    MPI_File_open(MPI_COMM_WORLD, "binOut", MPI_MODE_CREATE |MPI_MODE_WRONLY, MPI_INFO_NULL, &outFile);
     
 
     
@@ -119,12 +119,14 @@ int main(int argc, char **argv) {
     //cout<<"Real rank size on rank "<<rank<<" is "<<allSizes[rank]<<endl;
     MPI_Allgather(&allSizes[rank], 1, MPI_INT, allSizes,1, MPI_INT, MPI_COMM_WORLD);
     
+    MPI_File_set_view(outFile, 0, MPI_DOUBLE, MPI_DOUBLE,"native", MPI_INFO_NULL);
     
     
     // for (int i = 0; i < size; i++)
     // {
-    //     cout<<i<<" Received "<<allSizes[i]<<" in rank "<<rank<<endl;
+    //     cout<<i<<" Received "<<allSizes[i]<<" in rank "<<rank<< " ";
     // }
+    // cout << endl;
     
     // for (auto &&i : allSizes)
     // {
@@ -138,8 +140,8 @@ int main(int argc, char **argv) {
         // for (int i = 0; i < nums.size(); i++)
         // {
             //cout<<i<<endl;
-            int ierr = MPI_File_set_view(outFile, writeAt, MPI_DOUBLE, MPI_DOUBLE,"native", MPI_INFO_NULL);
-            cout<<ierr<<endl;
+            
+            // cout<<ierr<<endl;
             // MPI_File_write(outFile, reinterpret_cast<char*>( &nums[i] ), BUFSIZE, MPI_DOUBLE, MPI_STATUS_IGNORE);
             BUFSIZE++;
         // }    
