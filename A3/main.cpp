@@ -149,7 +149,7 @@ string queryHNSW(double* q, int u, int d, int k, int ep, int* indptr, int* index
     // top_k.print();
     string ans = "";
     for(int i = k-1; i >= 0; i--){
-        ans += to_string(top_k.pop().first) + " ";
+        ans = to_string(top_k.pop().first) + " " + ans;
     }
     return ans;
 }
@@ -288,7 +288,7 @@ int main(int argc, char* argv[]){
 
     int k = 3;
 
-    vector<string> answers(end-start);
+    string* answers = new string[end-start];
     int totalLen = 0;
     // #pragma omp parallel num_threads(4)
     for(int i=start; i<end; i++){
@@ -304,13 +304,6 @@ int main(int argc, char* argv[]){
         // cout <<"]"<< endl;
     }
 
-    
-    for (int i = 0; i < answers.size(); i++)
-    {
-        cout<<answers[i];
-        
-    }
-
     int *allSizes = new int[size];
 
     allSizes[rank] = totalLen;
@@ -320,32 +313,20 @@ int main(int argc, char* argv[]){
     int writeOffset = 0;
     for (int i = 0; i < rank; i++)
     {
-        writeOffset+=allSizes[i];
+        writeOffset += allSizes[i];
     }
     int sizeoftype = sizeof(char);
     
-
-    string output =  "finaloutput";
-    std::ofstream outfile(output, std::ios::out);
+    MPI_File fh;
+    MPI_File_open(MPI_COMM_SELF, "finaloutput",MPI_MODE_CREATE | MPI_MODE_WRONLY,MPI_INFO_NULL,&fh);
+    MPI_File_set_view(fh, writeOffset*sizeof(char),  MPI_CHAR, MPI_CHAR, "native", MPI_INFO_NULL);
+    MPI_Status status;
     
+    for(int i=0; i<end-start; i++)
+        MPI_File_write(fh,answers[i].c_str(),answers[i].size()*sizeof(char), MPI_CHAR,&status);
 
-    if(rank == size-1){
-        writeAll(writeOffset, outfile, sizeoftype);
-    }
+    MPI_File_close(&fh);
 
-    
-    MPI_Barrier(MPI_COMM_WORLD);
-    
-    outfile.seekp(writeOffset, std::ios::beg);
-
-    for (int i = 0; i < answers.size(); i++)
-    {   
-        outfile.write(answers[i].c_str(),answers[i].size());
-    }
-    
-
-
-    outfile.close();
     
     MPI_Finalize();
 }
