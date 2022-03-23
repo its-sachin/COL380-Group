@@ -109,6 +109,10 @@ int main(int argc, char **argv) {
                 nums.push_back(a);
             }
 
+            cout << rank << " : ";
+            for(int i=0; i<nums.size(); i++) cout << nums[i] << " ";
+            cout << endl;
+
             allSizes[rank] = nums.size();
             
             MPI_Allgather(&allSizes[rank], 1, MPI_INT, allSizes,1, MPI_INT, MPI_COMM_WORLD);
@@ -125,9 +129,12 @@ int main(int argc, char **argv) {
             MPI_Barrier(MPI_COMM_WORLD);
             outfile.seekp(sizeoftype*writeOffset, std::ios::beg);
 
+            cout << rank << ": PRINTING : " ;
             for(int i=0; i<nums.size(); i++){
+                cout << nums[i] << " ";
                 outfile.write((char*)&nums[i], sizeoftype);
             }
+            cout << endl;
 
             outfile.close();
             // Val = nums[0];

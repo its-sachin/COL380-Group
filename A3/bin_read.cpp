@@ -153,20 +153,20 @@ int main(int argc, char* argv[]){
     }
     cout <<endl;
 
-    // double* vect = new double[n*d];
-    // gatherMPI(argv[1], vect, n, d, size, rank, fs);
+    double* vect = new double[n*d];
+    gatherMPI("outFolder/vect.bin", vect, n, d, size, rank, fs);
 
-    // cout<< rank << ": "<<"vect: "<<endl;
-    // for(int i=0; i<n; i++){
-    //     cout<< rank << ": ";
-    //     for(int j=0; j<d; j++){
-    //         cout<<vect[i*d + j]<<" ";
-    //     }
-    //     cout<<endl;
-    // }
+    cout<< rank << ": "<<"vect: "<<endl;
+    for(int i=0; i<n; i++){
+        cout<< rank << ": ";
+        for(int j=0; j<d; j++){
+            cout<<vect[i*d + j]<<" ";
+        }
+        cout<<endl;
+    }
 
     double* q = new double[n*d];
-    gatherMPI("outFolder/vect.bin", q, n, d, size, rank, fs);
+    gatherMPI("outFolder/users.bin", q, n, d, size, rank, fs);
 
     cout<< rank << ": "<<"q: "<<endl;
     for(int i=0; i<n; i++){
