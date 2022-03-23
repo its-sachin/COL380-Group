@@ -1,9 +1,5 @@
-#include <stdio.h>
 #include <mpi.h>
 #include <omp.h>
-#include <stdlib.h>
-#include <ctype.h>
-#include <string.h>
 #include<bits/stdc++.h>
 
 using namespace std;
@@ -14,14 +10,9 @@ void writeAll(int n, std::ofstream &out, int size){
     }
 }
 
-    
 int main(int argc, char **argv) {
-    // cout<<argv[1]<<endl;
+    int rank,size;
     
-
-    
-    //criticalData[6] = 0;
-    int rank, size;
     MPI_Init(&argc,&argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -29,103 +20,91 @@ int main(int argc, char **argv) {
     vector<string> files = {"level.txt","level_offset.txt","index.txt","indptr.txt","vect.txt"};
     int* sizes = new int[7];
 
-    for (int f = 0; f < files.size(); f++)
-    {        
+    for (int i = 0; i < files.size(); i++)
+    {
         MPI_File input;
-        int maxTextSize = 5;
-        
-        string fullFilePath = string(argv[1])+"/"+string(files[f]);
-        
-        MPI_File_open(MPI_COMM_WORLD, fullFilePath.c_str(), MPI_MODE_RDONLY, MPI_INFO_NULL, &input);
-        // MPI_File_open(MPI_COMM_WORLD, "vect.bin", MPI_MODE_CREATE |MPI_MODE_WRONLY, MPI_INFO_NULL, &outFile);
-        
+        MPI_Offset filesize;
+        int maxTextSize = 50,perRankReadSize,lastIndexToInclude,firstIndexToInclude;
+        char* buffData;
 
+        string inputFilePath = string(argv[1])+"/"+string(files[i]);
+        MPI_File_open(MPI_COMM_WORLD, inputFilePath.c_str(), MPI_MODE_RDONLY, MPI_INFO_NULL, &input);
+        MPI_File_get_size(input, &filesize);
+
+        // 0..... perRankReadSize-1 --> rank 0
+        // perRankReadSize ....  2*perRankReadSize - 1 ---> rank 1
+        //.....
+        // n*perRankReadSize ....  2*n*perRankReadSize - 1 (filesize-1)---> rank n
+        perRankReadSize = filesize/size;
         
-        MPI_Offset toStart,toEnd,filesize,toEndNoOffset;
-        MPI_Offset curRankSize;
-        char *buff;
-        bool status = false;
-        MPI_Offset start = 0;
-        MPI_Offset realEnd;
-        while (!status)
+        while (true)
         {
-            //free(buff);
-            status = false;
-            //status = true;
+            bool status1 = false;
+            bool status2 = false;
+
             maxTextSize = maxTextSize*2;
-            //cout<<maxTextSize<<endl;
-            MPI_File_get_size(input, &filesize);
-            //cout<<" filesize "<<filesize<<endl;
-            curRankSize = filesize/size;
+            MPI_Offset startReadAt,endReadAt,extendedEnd;
+            
+            startReadAt = (perRankReadSize)*rank;
+            endReadAt = min(((perRankReadSize)*(rank+1))-1,(int)(filesize-1));
+            extendedEnd = min((((perRankReadSize)*(rank+1))+maxTextSize)-1,(int)(filesize-1));
 
-            toStart = rank*curRankSize;
-            toEnd = (maxTextSize+((rank+1)*curRankSize)) - 1;
-            toEndNoOffset =((rank+1)*curRankSize) - 1;;
-            if(toEnd>=filesize-1){
-                status = true;
-                toEnd = filesize - 1;
+            int numBytesToRead = (extendedEnd-startReadAt) + 1;
+
+            buffData = new char[numBytesToRead];
+
+            MPI_File_read_at(input, startReadAt, buffData, numBytesToRead , MPI_CHAR, MPI_STATUS_IGNORE);
+
+            int indexEndReadAT = endReadAt - startReadAt;
+            int indexStartReadAt = 0;
+            int indexExtendedEnd = extendedEnd - startReadAt;
+            
+            if(indexEndReadAT!= numBytesToRead-1 && (buffData[indexEndReadAT]==' '||buffData[indexEndReadAT]=='\n')){
+                indexEndReadAT++;
             }
-            
 
-            buff = (char*)malloc( ((toEnd  -toStart + 1) + 1)*sizeof(char));
-
-            
-            MPI_File_read_at_all(input, toStart, buff, (toEnd  -toStart + 1) , MPI_CHAR, MPI_STATUS_IGNORE);
-
-            
-            buff[(toEnd  -toStart + 1)] = '\0';
-
-            realEnd = (toEnd  -toStart + 1);
-            for(int i = toEndNoOffset-toStart + 1;i<((toEnd  -toStart + 1));i++){
-                if(buff[i]==' '||buff[i]=='\n'){
-                    //cout<<"is SPace "<<rank<<endl;
-                    realEnd = i;
-                    status = true;
+            lastIndexToInclude = indexEndReadAT;
+            for (int j = indexEndReadAT; j <= min(numBytesToRead-1,indexExtendedEnd); j++)
+            {
+                lastIndexToInclude = j;
+                if(buffData[j]==' '||buffData[j]=='\n'){
+                    status1 = true;
                     break;
                 }
             }
-            //cout<<realEnd<<endl;
-            if(rank==size-1){
-                status = true;
+            if(rank==size-1||indexEndReadAT== numBytesToRead-1){
+                status1 = true;
             }
-
-            start = 0;
             if(rank!=0){
-                for(MPI_Offset i = 0;i<((toEnd  -toStart + 1));i++){
-                    //cout<<i<<" "<<buff[i]<<endl;
-                    if(buff[i]==' '||buff[i]=='\n'){
-                        start = i+1;
+                for (int j = 0; j < numBytesToRead; j++)
+                {
+                    firstIndexToInclude = j;
+                    if(buffData[j]==' '||buffData[j]=='\n'){
+                        status2 = true;
                         break;
                     }
                 }
+            }else{
+                firstIndexToInclude = 0;
+                status2 = true;
             }
-        }
 
-        // cout<<"At rank "<<rank<<endl;
+            if(status1&&status2){
+                break;
+            }
+            
+        }
         string s = "";
         // #pragma omp parallel for num_threads(stoi(argv[3])) shared(s, buff) reduction(+: s)
-        for(MPI_Offset i = start;i<realEnd;i++){
-            s+=buff[i];
+        for(int i = firstIndexToInclude;i<=lastIndexToInclude;i++){
+            s+=buffData[i];
         }
 
-        // char* buff1 = new char[60];
-        // string s1 = "";
-        // for (int i = 0; i < 60; i++)
-        // {
-        //     buff1[i] = '0'+i;
-        //     // cout<<buff1[i]<<" ";
-        // }
-
-        // #pragma omp parallel for num_threads(4) shared(s1, buff1) reduction(+: s1)
-        // for (int i = 0; i < 60; i++)
-        // {
-        //     s1+=buff1[i];
-        // }
 
         MPI_File_close(&input);
 
         std::istringstream is( s);
-        string myString = files[f];
+        string myString = files[i];
         string output = string(argv[2])+"/" +(myString.substr(0, myString.size()-3))+"bin";
         std::ofstream outfile(output, std::ios::out | std::ios::binary);
         int writeOffset = 0;
@@ -134,7 +113,7 @@ int main(int argc, char **argv) {
 
         int sizeoftype = sizeof(int);
 
-        if(files[f]=="vect.txt"){
+        if(files[i]=="vect.txt"){
         
             sizeoftype = sizeof(double);
             vector<double> nums;
@@ -197,7 +176,7 @@ int main(int argc, char **argv) {
             // Val = nums[0];
 
         }
-        sizes[f+2] = writeOffset + allSizes[rank];
+        sizes[i+2] = writeOffset + allSizes[rank];
     }
 
     if(rank == size - 1){
@@ -224,35 +203,12 @@ int main(int argc, char **argv) {
         }
 
         outfile.close();
+        
 
 
     }
-
     MPI_Finalize();
 
     return 0;
+
 }
-
-
-
-// 10
-// 10
-// 10
-// 10
-// At rank 0
-// -0.029495 0.030087 -0.013817 -0.017568 0.045015
-// 0.004782 0.032958 -0.003865
-// End at rank 0
-// At rank 1
-// 0.003602 0.022957
-// 0.004957 0.030688 -0.036196 -0.010938 0.008610
-// -0.028899
-// End at rank 1
-// At rank 2
-// 0.061895 -0.045630 0.000977 0.053625
-// 0.026941 -0.000656 -0.028331
-// End at rank 2
-// At rank 3
-// 0.038961 0.003586
-// -0.014396 0.033023 -0.012421 -0.027277 0.017062
-// End at rank 3
