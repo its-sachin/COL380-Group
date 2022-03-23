@@ -1,11 +1,10 @@
 #include<bits/stdc++.h>
 #include <mpi.h>
 #include <omp.h>
-#include <chrono>
 // #include 
 
 using namespace std;
-using namespace std::chrono;
+
 
 typedef pair<int, double> pid;
 
@@ -242,7 +241,6 @@ void gatherMPI(const char *filename, double* arr, int n, int d, int size, int ra
 
 int main(int argc, char* argv[]){
 
-    auto startTime = high_resolution_clock::now();
     int rank, size;
 
     //Starting MPI pipeline
@@ -342,9 +340,4 @@ int main(int argc, char* argv[]){
     answers->clear();
     delete(allSizes);
     MPI_Finalize();
-    if(rank==0){
-        auto stopTime = high_resolution_clock::now();
-        auto duration = duration_cast<microseconds>(stopTime - startTime);
-        cout << duration.count() << endl;
-    }
 }
