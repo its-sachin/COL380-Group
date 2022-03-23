@@ -278,7 +278,7 @@ int main(int argc, char* argv[]){
     gatherMPI((string(argv[1])+"/vect.bin").c_str(), vect, n, d, size, rank, fs);
 
     double* q = new double[n*d];
-    gatherMPI((string(argv[1])+"/vect.bin").c_str(), q, n, d, size, rank, fs);
+    gatherMPI((string(argv[1])+"/users.bin").c_str(), q, n, d, size, rank, fs);
 
     int start = rank*(n/size);
     int end = (rank+1)*(n/size);
@@ -286,7 +286,7 @@ int main(int argc, char* argv[]){
         end = n;
     }
 
-    int k = 3;
+    int k = stoi(argv[2]);
 
     string* answers = new string[end-start];
     int totalLen = 0;
