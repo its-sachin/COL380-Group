@@ -1,0 +1,1 @@
+mpirun -np 4 ./main.o $1 $2 $3 $4 4

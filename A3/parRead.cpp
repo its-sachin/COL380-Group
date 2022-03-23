@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <mpi.h>
+#include <omp.h>
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
@@ -101,17 +102,31 @@ int main(int argc, char **argv) {
         }
 
         // cout<<"At rank "<<rank<<endl;
-        string str = "";
+        string s = "";
+        // #pragma omp parallel for num_threads(stoi(argv[3])) shared(s, buff) reduction(+: s)
         for(int i = start;i<realEnd;i++){
-            str+=buff[i];
-            //cout<<buff[i];
+            s+=buff[i];
         }
+
+        // char* buff1 = new char[60];
+        // string s1 = "";
+        // for (int i = 0; i < 60; i++)
+        // {
+        //     buff1[i] = '0'+i;
+        //     // cout<<buff1[i]<<" ";
+        // }
+
+        // #pragma omp parallel for num_threads(4) shared(s1, buff1) reduction(+: s1)
+        // for (int i = 0; i < 60; i++)
+        // {
+        //     s1+=buff1[i];
+        // }
 
         MPI_File_close(&input);
 
-        std::istringstream is( str);
+        std::istringstream is( s);
         string myString = files[f];
-        string output =  (myString.substr(0, myString.size()-3))+"bin";
+        string output = string(argv[2])+"/" +(myString.substr(0, myString.size()-3))+"bin";
         std::ofstream outfile(output, std::ios::out | std::ios::binary);
         int writeOffset = 0;
         int *allSizes = new int[size];
@@ -200,6 +215,16 @@ int main(int argc, char **argv) {
             sizes[f+1] = k;
             input.close();
         }
+
+        string output = string(argv[2])+"/sizes.bin";
+        std::ofstream outfile(output, std::ios::out | std::ios::binary);
+        
+        for(int i=0; i<7; i++){
+            outfile.write((char*)&sizes[i], sizeof(int));
+        }
+
+        outfile.close();
+
 
     }
 

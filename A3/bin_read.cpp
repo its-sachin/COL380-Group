@@ -105,7 +105,7 @@ int main(int argc, char* argv[]){
     
     MPI_File fs;
 
-    readMPI("dummy_bin/sizes.bin", read, 7, 1, 0, fs);
+    readMPI("outFolder/sizes.bin", read, 7, 1, 0, fs);
 
     int n = read[0]; // size of levels 
     int ep = read[1]; // ep file value
@@ -124,7 +124,7 @@ int main(int argc, char* argv[]){
     cout << rank << ": "<<"d: "<<d<<endl;
 
     int* indptr = new int[s_indptr];
-    gatherMPI("indptr.bin", indptr, s_indptr, size, rank, fs);
+    gatherMPI("outFolder/indptr.bin", indptr, s_indptr, size, rank, fs);
 
     cout << rank << ": "<<"indptr: "<<endl;
     cout<< rank << ": ";
@@ -134,7 +134,7 @@ int main(int argc, char* argv[]){
     cout <<endl;
 
     int* index = new int[s_index];
-    gatherMPI("index.bin", index, s_index, size, rank, fs);
+    gatherMPI("outFolder/index.bin", index, s_index, size, rank, fs);
 
     cout<< rank << ": "<<"index: "<<endl;
     cout<< rank << ": ";
@@ -144,7 +144,7 @@ int main(int argc, char* argv[]){
     cout <<endl;
 
     int* level_offset = new int[s_level_offset];
-    gatherMPI("level_offset.bin", level_offset, s_level_offset, size, rank, fs);
+    gatherMPI("outFolder/level_offset.bin", level_offset, s_level_offset, size, rank, fs);
 
     cout<< rank << ": "<<"level_offset: "<<endl;
     cout<< rank << ": ";
@@ -166,7 +166,7 @@ int main(int argc, char* argv[]){
     // }
 
     double* q = new double[n*d];
-    gatherMPI("vect.bin", q, n, d, size, rank, fs);
+    gatherMPI("outFolder/vect.bin", q, n, d, size, rank, fs);
 
     cout<< rank << ": "<<"q: "<<endl;
     for(int i=0; i<n; i++){
