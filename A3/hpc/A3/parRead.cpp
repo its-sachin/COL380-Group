@@ -32,7 +32,7 @@ int main(int argc, char **argv) {
     for (int f = 0; f < files.size(); f++)
     {        
         MPI_File input;
-        int maxTextSize = 5;
+        MPI_Offset maxTextSize = 5;
         
         string fullFilePath = string(argv[1])+"/"+string(files[f]);
         
@@ -70,7 +70,7 @@ int main(int argc, char **argv) {
             buff = (char*)malloc( ((toEnd  -toStart + 1) + 1)*sizeof(char));
 
             
-            MPI_File_read_at_all(input, toStart, buff, (toEnd  -toStart + 1) , MPI_CHAR, MPI_STATUS_IGNORE);
+            MPI_File_read_at(input, toStart, buff, (toEnd  -toStart + 1) , MPI_CHAR, MPI_STATUS_IGNORE);
 
             
             buff[(toEnd  -toStart + 1)] = '\0';

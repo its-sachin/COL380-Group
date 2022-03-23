@@ -1,34 +1,56 @@
 /* This is an interactive version of cpi */
 #include <mpi.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include<bits/stdc++.h>
 
-
+using namespace std;
 int main(int argc,char *argv[])
 {
-
-    int  namelen, numprocs, rank;
-    char processor_name[MPI_MAX_PROCESSOR_NAME];
+    int rank, size;
     MPI_Init(&argc,&argv);
-    MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-    MPI_Comm_size(MPI_COMM_WORLD,&numprocs);    
-    MPI_Get_processor_name(processor_name,&namelen);
-    MPI_Status status;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-    MPI_File fh;
+    string fullFilePath = string(argv[1]) + "/vect.txt";
+    MPI_File input;
+    MPI_File_open(MPI_COMM_WORLD, fullFilePath.c_str(), MPI_MODE_RDONLY, MPI_INFO_NULL, &input);
+    MPI_Offset filesize;
+    MPI_File_get_size(input, &filesize);
+    MPI_File_close(&input);
 
 
-    MPI_File_open(MPI_COMM_SELF, "test.txt",MPI_MODE_CREATE | MPI_MODE_WRONLY,MPI_INFO_NULL,&fh);
-    int i = rank + 1;
-    std::string s = std::to_string(i) + " hey\n";
-    for(int j = 100*rank; j < 100*numprocs; j++);
-    std::cout << "EXECUTING " << rank << std::endl;
-    MPI_File_set_view(fh, (1+rank)*s.size()*sizeof(char),  MPI_CHAR, MPI_CHAR, "native", MPI_INFO_NULL);
-    MPI_File_write(fh,s.c_str(),s.size()*sizeof(char), MPI_CHAR,&status);
-    //        fclose(f);
-    MPI_File_close(&fh);
+    ifstream infile;
+    infile.open(fullFilePath, std::ios::in);
 
+    long long fsize = (long long)filesize;
+    long long start = (rank*fsize)/size;
+    long long end = ((rank+1)*fsize)/size;
+
+    if(rank > 0)start += 1;
+    infile.seekg(start, std::ios::beg);
+
+    if(rank > 0){
+        char curr = '\0';
+        while(!(curr == '\n' or curr == ' ')){
+            infile.read((char*)&curr, 1);
+            start += 1;
+        }
+    }
+    // infile.seekg(start, std::ios::beg);
+
+    vector<double> v;
+    bool toadd = (rank == 0);
+    while(start <= end){
+        double a;
+        infile >> a;
+        start += to_string(a).size() + 1;
+        v.push_back(a);
+    }
+
+    infile.close();
+
+    cout << rank << ": ";
+    for(int i=0; i<v.size(); i++)cout << v[i] << " ";
+    cout << endl;
 
     MPI_Finalize();
     return 0;

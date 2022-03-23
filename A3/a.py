@@ -1,7 +1,7 @@
 import random
 
-c = random.randint(10,100)
-r = random.randint(10,100)
+c = random.randint(1000,5000)
+r = random.randint(1000,5000)
 
 f = open('vect.txt','w')
 for i in range(r):
@@ -11,3 +11,4 @@ for i in range(r):
     f.write('\n')
 
 f.close()
+

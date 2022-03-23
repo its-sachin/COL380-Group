@@ -292,7 +292,7 @@ int main(int argc, char* argv[]){
 
     string* answers = new string[end-start];
     int totalLen = 0;
-    #pragma omp parallel for num_threads(stoi(argv[5]))
+    #pragma omp parallel for
     for(int i=start; i<end; i++){
         //cout<<"Total threads "<<omp_get_num_threads()<<endl;
         //cout<<"Openmp thread id"<<omp_get_thread_num()<<endl;
@@ -322,7 +322,7 @@ int main(int argc, char* argv[]){
     int sizeoftype = sizeof(char);
     
     MPI_File fh;
-    MPI_File_open(MPI_COMM_SELF, (string(argv[1])+"/"+string(argv[4])).c_str(),MPI_MODE_CREATE | MPI_MODE_WRONLY,MPI_INFO_NULL,&fh);
+    MPI_File_open(MPI_COMM_SELF, string(argv[4]).c_str(),MPI_MODE_CREATE | MPI_MODE_WRONLY,MPI_INFO_NULL,&fh);
     MPI_File_set_view(fh, writeOffset*sizeof(char),  MPI_CHAR, MPI_CHAR, "native", MPI_INFO_NULL);
     MPI_Status status;
     
