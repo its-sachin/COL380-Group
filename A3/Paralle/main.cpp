@@ -208,6 +208,8 @@ void gatherMPI(const char *filename, double* arr, int n, int d, int size, int ra
     delete (temp);
 }
 
+
+
 int main(int argc, char* argv[]){
 
     auto startTime = high_resolution_clock::now();
@@ -238,25 +240,31 @@ int main(int argc, char* argv[]){
 
     int usize[1];
     readMPI((path + "/numusers.bin").c_str(), usize, 1, 1, 0, fs);
-
-    int* indptr = new int[s_indptr];
-    gatherMPI((path + "/indptr.bin").c_str(), indptr, s_indptr, size, rank, fs);
-
-    int* index = new int[s_index];
-    gatherMPI((path + "/index.bin").c_str(), index, s_index, size, rank, fs);
-
-    int* level_offset = new int[s_level_offset];
-    gatherMPI((path + "/level_offset.bin").c_str(), level_offset, s_level_offset, size, rank, fs);
-
-    double* vect = new double[n*d];
-    gatherMPI((path + "/vect.bin").c_str(), vect, n, d, size, rank, fs);
-
-    double* q = new double[n*d];
-    gatherMPI((path + "/users.bin").c_str(), q, n, d, size, rank, fs);
-
     int numuser = usize[0]/d;
 
-    cout << rank << ": " <<numuser << " " <<usize[0] << endl;
+    // cout << rank << ": "<<"n: "<<n<<endl;
+    // cout << rank << ": "<< "ep: "<<ep<<endl;
+    // cout << rank << ": "<<"max level: "<<max_level<<endl;
+    // cout << rank << ": "<<"s_level_offset: "<<s_level_offset<<endl;
+    // cout << rank << ": "<<"s_index: "<<s_index<<endl;
+    // cout << rank << ": "<<"s_indptr: "<<s_indptr<<endl;
+    // cout << rank << ": "<<"d: "<<d<<endl;
+
+    int* indptr = new int[s_indptr];
+    gatherMPI((path+"/indptr.bin").c_str(), indptr, s_indptr, size, rank, fs);
+
+
+    int* index = new int[s_index];
+    gatherMPI((path+"/index.bin").c_str(), index, s_index, size, rank, fs);
+
+
+    int* level_offset = new int[s_level_offset];
+    gatherMPI((path+"/level_offset.bin").c_str(), level_offset, s_level_offset, size, rank, fs);
+
+
+    double* vect = new double[n*d];
+    gatherMPI((path+"/vect.bin").c_str(), vect, n, d, size, rank, fs);
+
 
     int start = rank*(numuser/size);
     int end = (rank+1)*(numuser/size);
@@ -264,15 +272,31 @@ int main(int argc, char* argv[]){
         end = numuser;
     }
 
+    double* q = new double[(end-start)*d];
+    MPI_Datatype row;
+    MPI_Type_contiguous(d, MPI_DOUBLE, &row);
+    MPI_Type_commit(&row);
+
+    int blockSize =  sizeof(double)*d;
+    int disp = rank*(n/size)*blockSize;
+
+    MPI_File_open(MPI_COMM_WORLD,(path+"/users.bin").c_str() , MPI_MODE_RDONLY, MPI_INFO_NULL, &fs);
+    MPI_File_set_view(fs, disp, row, MPI_DOUBLE, "native", MPI_INFO_NULL);
+
+    MPI_File_read(fs, q, end-start, row, MPI_STATUS_IGNORE);
+
+    MPI_File_close(&fs);
+
+
     int k = stoi(argv[2]);
 
 
     string* answers = new string[end-start];
     int totalLen = 0;
     #pragma omp parallel for
-    for(int i=start; i<end; i++){
+    for(int i=0; i<end-start; i++){
         string ans = queryHNSW(q, i, d, k, ep, indptr, index, level_offset, max_level, vect) + "\n";
-        answers[i-start] = ans;
+        answers[i] = ans;
 
         #pragma omp critical
         totalLen+=ans.size();
@@ -291,20 +315,17 @@ int main(int argc, char* argv[]){
     }
     int sizeoftype = sizeof(char);
 
-    ofstream out(argv[3], ios::binary);
+    MPI_File fh;
+    MPI_File_open(MPI_COMM_SELF, string(argv[3]).c_str(),MPI_MODE_CREATE | MPI_MODE_WRONLY,MPI_INFO_NULL,&fh);
+    MPI_File_set_view(fh, writeOffset*sizeof(char),  MPI_CHAR, MPI_CHAR, "native", MPI_INFO_NULL);
+    MPI_Status status;
 
-    if(rank == size - 1){
-        writeAll(writeOffset + allSizes[rank], out, sizeoftype);
-    }
-
-    MPI_Barrier(MPI_COMM_WORLD);
-    
-    out.seekp(writeOffset*sizeoftype, ios::beg);
-    
     for(int i=0; i<end-start; i++){
-        out.write(answers[i].c_str(), answers[i].size());
+        MPI_File_write(fh,answers[i].c_str(),answers[i].size()*sizeof(char), MPI_CHAR,&status);
         answers[i].clear();
     }
+
+    MPI_File_close(&fh);
     
     delete(indptr);
     delete(index);

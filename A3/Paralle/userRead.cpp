@@ -63,11 +63,6 @@ int main(int argc, char **argv) {
         nums.push_back(a);
     }
 
-    int len = nums.size();
-    ofstream sizefile(string(argv[2])+"/numusers.bin", std::ios::out | std::ios::binary);
-    sizefile.write((char*)&len, sizeof(int));
-    sizefile.close();
-
 
     allSizes[rank] = nums.size();
 
@@ -90,6 +85,13 @@ int main(int argc, char **argv) {
         outfile.write((char*)&nums[i], sizeoftype);
     }
     outfile.close();
+
+    if(rank == size-1){
+        int len = writeOffset + nums.size();
+        ofstream sizefile(string(argv[2])+"/numusers.bin", std::ios::out | std::ios::binary);
+        sizefile.write((char*)&len, sizeof(int));
+        sizefile.close();
+    }
 
     MPI_Finalize();
 
