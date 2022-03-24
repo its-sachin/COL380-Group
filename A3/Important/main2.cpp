@@ -1,9 +1,11 @@
 #include<bits/stdc++.h>
 #include <mpi.h>
 #include <omp.h>
+#include <chrono>
 // #include 
 
 using namespace std;
+using namespace std::chrono;
 
 
 typedef pair<int, double> pid;
@@ -15,62 +17,19 @@ struct Less
    }
 };
 
-
-class Heap{
-
-    private:
-    void swap(pid& a, pid& b){
-        pid temp = a;
-        a = b;
-        b = temp;
-    }
-
-    public:
-    priority_queue<pid, vector<pid>, Less> heap;
-    int size;
-
-    Heap(int k){
-        size=k;
-    }
-
-    void push(pid p){
-        heap.push(p);
-    }
-
-    pid pop(){
-        pid p = heap.top();
-        heap.pop();
-        return p;
-    }
-
-    bool has_space(){
-        return heap.size()<size;
-    }
-
-    int getSize(){
-        return heap.size();
-    }
-  
-    double getMax(){
-        return heap.top().second;
-    }
-
-    // WORKS IF heap.size = size + 1
-    void trim(){
-        if(heap.size()>size){
-            heap.pop();
-        }
-    }
-
-    void print(){
-        priority_queue<pid, vector<pid>, Less> temp = heap;
-        while(!temp.empty()){
-            cout << "("<< temp.top().first << " " << temp.top().second << "), ";
-            temp.pop();
-        }
-        cout << endl;
-    }
+struct More
+{
+   bool operator()(const pid& a, const pid& b){
+       return a.second < b.second;
+   }
 };
+
+
+typedef priority_queue<pid, vector<pid>, Less> min_pq;
+typedef priority_queue<pid, vector<pid>, More> max_pq;
+
+
+
 void writeAll(int n, std::ofstream &out, int size){
     for(int i =0; i<n ;i++){
         out.write((char*)&i, size);
@@ -90,21 +49,26 @@ double cosine_dist(double* a, int ai, double* b, int bi, int n)
     double dot = dotProduct(a, ai, b, bi, n);
     double mod_a = dotProduct(a, ai, a, ai, n);
     double mod_b = dotProduct(b, bi, b, bi, n);
-    return dot / (sqrt(mod_a) * sqrt(mod_b));
+    return 1.0 - dot / (sqrt(mod_a) * sqrt(mod_b));
 }
 
 
 
 // --------------------------------------------------
 
-void searchLayer(double* q, int u, int d, Heap& top_k, int* indptr, int* level_offset, int lc, 
-                int* index, unordered_set<int>& visited, double* vect)
+void searchLayer(double* q, int u, int d, max_pq& top_k, int* indptr, int* level_offset, int lc, 
+                int* index, unordered_set<int>& visited, double* vect, int k)
 {
-    Heap candidats = Heap(top_k.size);
-    candidats.heap = top_k.heap;
+    min_pq candidats;
+    max_pq temp = top_k;
+    while(!temp.empty()){
+        candidats.push(temp.top());
+        temp.pop();
+    }
 
-    while(candidats.getSize() > 0){
-        int ep = candidats.pop().first;
+    while(candidats.size() > 0){
+        int ep = candidats.top().first;
+        candidats.pop();
 
         // cout << "ep = " << ep << " Size = " << candidats.getSize()<< endl;
 
@@ -120,9 +84,13 @@ void searchLayer(double* q, int u, int d, Heap& top_k, int* indptr, int* level_o
             if(visited.find(px) != visited.end() || px == -1) continue;
             visited.insert(px);
             double dist = cosine_dist(vect, px, q, u, d);
-            if(dist < top_k.getMax() && !top_k.has_space()) continue;
+
+            if(dist > top_k.top().second && top_k.size() >= k) continue;
+            
             top_k.push(pid(px,dist));
-            top_k.trim();
+            if(top_k.size() > k){
+                top_k.pop();
+            }
             candidats.push(pid(px,dist));
         }
     }
@@ -130,16 +98,15 @@ void searchLayer(double* q, int u, int d, Heap& top_k, int* indptr, int* level_o
 
 string queryHNSW(double* q, int u, int d, int k, int ep, int* indptr, int* index, int* level_offset, int max_level, double* vect)
 {
-    Heap top_k = Heap(k);
+    max_pq top_k;
     top_k.push(pid(ep,cosine_dist(vect, ep, q, u, d)));
     // cout << "pushing " << ep << " " << top_k.getMax() << endl;
     unordered_set<int> visited;
     visited.insert(ep);
 
     for (int level = max_level-1; level >= 0; level--){
-        // cout<< "level: " << level << endl;
         // cout << "----------------------level = " << level << endl;
-        searchLayer(q, u, d, top_k, indptr, level_offset, level, index, visited, vect);
+        searchLayer(q, u, d, top_k, indptr, level_offset, level, index, visited, vect, k);
         // cout << "visited " ;
         // for(auto it = visited.begin(); it != visited.end(); it++){
         //     cout << *it << " ";
@@ -149,8 +116,9 @@ string queryHNSW(double* q, int u, int d, int k, int ep, int* indptr, int* index
     }
     // top_k.print();
     string ans = "";
-    for(int i = k-1; i >= 0; i--){
-        ans = to_string(top_k.pop().first) + " " + ans;
+    for(int i = 0; i < k; i++){
+        ans = to_string(top_k.top().first) + " " + ans;
+        top_k.pop();
     }
     return ans;
 }
@@ -239,8 +207,10 @@ void gatherMPI(const char *filename, double* arr, int n, int d, int size, int ra
     delete (temp);
 }
 
+
 int main(int argc, char* argv[]){
 
+    auto startTime = high_resolution_clock::now();
     int rank, size;
 
     //Starting MPI pipeline
@@ -280,30 +250,24 @@ int main(int argc, char* argv[]){
     double* q = new double[n*d];
     gatherMPI((string(argv[1])+"/users.bin").c_str(), q, n, d, size, rank, fs);
 
-    int start = rank*(n/size);
-    int end = (rank+1)*(n/size);
+    int start = rank*(numuser/size);
+    int end = (rank+1)*(numuser/size);
     if(rank == size-1){
-        end = n;
+        end = numuser;
     }
 
     int k = stoi(argv[2]);
 
     string* answers = new string[end-start];
     int totalLen = 0;
-    #pragma omp parallel for num_threads(stoi(argv[5]))
+    #pragma omp parallel for
     for(int i=start; i<end; i++){
-        //cout<<"Total threads "<<omp_get_num_threads()<<endl;
-        //cout<<"Openmp thread id"<<omp_get_thread_num()<<endl;
-        //cout << rank << ": " <<"i: " << i << endl;
+        cout << rank << ": " << i << endl;
         string ans = queryHNSW(q, i, d, k, ep, indptr, index, level_offset, max_level, vect) + "\n";
-        //cout<<ans;
         answers[i-start] = ans;
+
+        #pragma omp critical
         totalLen+=ans.size();
-        // cout << "[" <<rank << ": top k for q[" << i << "] =";
-        // for(int j=0; j<k; j++){
-        //     cout << ans[j] << " ";
-        // }
-        // cout <<"]"<< endl;
     }
 
     int *allSizes = new int[size];
@@ -318,26 +282,33 @@ int main(int argc, char* argv[]){
         writeOffset += allSizes[i];
     }
     int sizeoftype = sizeof(char);
-    
-    MPI_File fh;
-    MPI_File_open(MPI_COMM_SELF, (string(argv[1])+"/"+string(argv[4])).c_str(),MPI_MODE_CREATE | MPI_MODE_WRONLY,MPI_INFO_NULL,&fh);
-    MPI_File_set_view(fh, writeOffset*sizeof(char),  MPI_CHAR, MPI_CHAR, "native", MPI_INFO_NULL);
-    MPI_Status status;
-    
-    for(int i=0; i<end-start; i++){
-        MPI_File_write(fh,answers[i].c_str(),answers[i].size()*sizeof(char), MPI_CHAR,&status);
-        answers[i].clear();
+
+    ofstream out(argv[4], ios::binary);
+
+    if(rank == size - 1){
+        writeAll(writeOffset + allSizes[rank], out, sizeoftype);
     }
 
-    MPI_File_close(&fh);
+    MPI_Barrier(MPI_COMM_WORLD);
     
-    delete(read);
+    out.seekp(writeOffset*sizeoftype, ios::beg);
+    
+    for(int i=0; i<end-start; i++){
+        out.write(answers[i].c_str(), answers[i].size());
+        answers[i].clear();
+    }
+    
     delete(indptr);
     delete(index);
     delete(level_offset);
     delete(vect);
     delete(q);
-    answers->clear();
     delete(allSizes);
+
     MPI_Finalize();
+    if(rank==0){
+        auto stopTime = high_resolution_clock::now();
+        auto duration = duration_cast<microseconds>(stopTime - startTime);
+        cout << "TIME IN SEC: " <<duration.count()/1e6 << endl;
+    }
 }

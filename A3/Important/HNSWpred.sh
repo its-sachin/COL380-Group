@@ -1,0 +1,1 @@
+mpiexec --bind-to none ./main.o $1 $2 $3 $4
