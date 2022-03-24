@@ -63,6 +63,12 @@ int main(int argc, char **argv) {
         nums.push_back(a);
     }
 
+    int len = nums.size();
+    ofstream sizefile(string(argv[2])+"/users_size.bin", std::ios::out | std::ios::binary);
+    sizefile.write((char*)&len, sizeof(int));
+    sizefile.close();
+
+
     allSizes[rank] = nums.size();
 
     MPI_Allgather(&allSizes[rank], 1, MPI_INT, allSizes,1, MPI_INT, MPI_COMM_WORLD);

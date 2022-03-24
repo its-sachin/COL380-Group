@@ -123,26 +123,90 @@ string queryHNSW(double* q, int u, int d, int k, int ep, int* indptr, int* index
     return ans;
 }
 
-int getsize(string fullFilePath){
-    ifstream infile;
-    infile.open(fullFilePath, std::ios::in);
-    int a;
-    int size = 0;
-    while(infile >> a){  
-        size++;
+int getBuffSize(int len, int size, int rank){
+    int buffsize = len/size;
+    if(rank == size-1){
+        buffsize = len - (size-1)*buffsize;
     }
-    infile.close();
-    return size;
+    return buffsize;
 }
 
-int readOne(string fullFilePath){
-    ifstream infile;
-    infile.open(fullFilePath, std::ios::in);
-    int a;
-    infile >> a;
-    infile.close();
-    return a;
+void readMPI(const char *filename, int* arr, int len, int size, int rank, MPI_File &fs){
+    
+    int blockSize =  sizeof(int);
+    int buffsize = getBuffSize(len, size, rank);
+    int disp = rank*(len/size)*blockSize;
+
+    MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_RDONLY, MPI_INFO_NULL, &fs);
+    MPI_File_set_view(fs, disp, MPI_INT, MPI_INT, "native", MPI_INFO_NULL);
+
+    MPI_File_read(fs, arr, buffsize, MPI_INT, MPI_STATUS_IGNORE);
+    MPI_File_close(&fs);
 }
+
+void gatherMPI(const char *filename, int* arr, int len, int size, int rank, MPI_File &fs){
+    int* temp = new int[getBuffSize(len, size, rank)];
+    readMPI(filename, temp, len, size, rank, fs);
+
+    MPI_Allgather(temp, len/size, MPI_INT, arr, len/size, MPI_INT, MPI_COMM_WORLD);
+
+    int left = getBuffSize(len, size, size - 1) - len/size;
+
+    if(left > 0){
+        for(int i=0; i<left; i++){
+            temp[i] = temp[len/size + i];
+        }
+
+        MPI_Bcast(temp, left, MPI_INT, size-1, MPI_COMM_WORLD);
+        for(int i=0; i<left; i++){
+            arr[size*(len/size) + i] = temp[i];
+        }
+    }
+    delete (temp);
+}
+
+void gatherMPI(const char *filename, double* arr, int n, int d, int size, int rank, MPI_File &fs){
+
+    MPI_Datatype row;
+    MPI_Type_contiguous(d, MPI_DOUBLE, &row);
+    MPI_Type_commit(&row);
+
+    int blockSize =  sizeof(double)*d;
+    int disp = rank*(n/size)*blockSize;
+
+    MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_RDONLY, MPI_INFO_NULL, &fs);
+    MPI_File_set_view(fs, disp, row, MPI_DOUBLE, "native", MPI_INFO_NULL);
+
+    int start = rank*(n/size);
+    int end = (rank+1)*(n/size);
+    if(rank == size-1){
+        end = n;
+    }
+
+    double *temp = new double[(n + end-start)*d];
+    MPI_File_read(fs, temp, end-start, row, MPI_STATUS_IGNORE);
+
+    MPI_File_close(&fs);
+    MPI_Allgather(temp, n/size, row, arr, n/size, row, MPI_COMM_WORLD);
+
+    int left = n - (size-1)*(n/size) - n/size;
+    // cout << "left: " << left<<endl;/
+    if(left > 0){
+        for(int i=0; i<left; i++){
+            for(int j=0; j<d; j++)
+                temp[i*d + j] = temp[(n/size + i)*d + j];
+        }
+
+        MPI_Bcast(temp, left, row, size-1, MPI_COMM_WORLD);
+        for(int i=0; i<left; i++){
+            for(int j=0; j<d; j++)
+                arr[(size*(n/size) + i)*d + j] = temp[i*d + j];
+        }
+    }
+
+    delete (temp);
+}
+
 
 int main(int argc, char* argv[]){
 
@@ -156,86 +220,35 @@ int main(int argc, char* argv[]){
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-    string path = argv[1];
-    int n = getsize(path + "/level.txt");
-    int ep = readOne(path + "/ep.txt");
-    int max_level = readOne(path + "/max_level.txt");
-
-    cout << rank << ": reading indptr" << endl;
-
-    ifstream infile;
-    int a;
-    vector<int> nums;
-
-    infile.open(path + "/indptr.txt", std::ios::in);
-    while(infile >> a){  
-        nums.push_back(a);
-    }
-    infile.close();
-    int* indptr = new int[nums.size()];
-    for(int i=0; i<nums.size(); i++)
-        indptr[i] = nums[i];
-    nums.clear();
-
-    cout << rank << ": reading index" << endl;
-
-    infile.open(path + "/index.txt", std::ios::in);
-    while(infile >> a){  
-        nums.push_back(a);
-    }
-    infile.close();
-    int* index = new int[nums.size()];
-    for(int i=0; i<nums.size(); i++)
-        index[i] = nums[i];
-    nums.clear();
-
-    cout << rank << ": reading level_offset" << endl;
-
-    infile.open(path + "/level_offset.txt", std::ios::in);
-    while(infile >> a){  
-        nums.push_back(a);
-    }
-    infile.close();
-    int* level_offset = new int[nums.size()];
-    for(int i=0; i<nums.size(); i++)
-        level_offset[i] = nums[i];
-    nums.clear();
-
-    cout << rank << ": reading vect" << endl;
-
-
-    vector<double> nums2;
-    double b;
+    int* read = new int[7];
     
-    infile.open(path + "/vect.txt", std::ios::in);
-    
-    while(infile >> b){  
-        nums2.push_back(b);
-    }
-    infile.close();
-    double* vect = new double[nums2.size()];
-    for(int i=0; i<nums2.size(); i++)
-        vect[i] = nums2[i];
+    MPI_File fs;
 
-    int d = nums2.size()/n;
+    readMPI((string(argv[1])+"/sizes.bin").c_str(), read, 7, 1, 0, fs);
 
-    nums2.clear();
+    int n = read[0]; // level file size
+    int ep = read[1]; // 
+    int max_level = read[2];
+    int s_level_offset = read[3];
+    int s_index = read[4];
+    int s_indptr = read[5];
+    int d = read[6];
 
-    cout << rank << ": reading user" << endl;
+    int* indptr = new int[s_indptr];
+    gatherMPI((string(argv[1])+"/indptr.bin").c_str(), indptr, s_indptr, size, rank, fs);
 
-    infile.open(argv[3], std::ios::in);
-    
-    while(infile >> b){  
-        nums2.push_back(b);
-    }
-    infile.close();
-    double* q = new double[nums2.size()];
-    for(int i=0; i<nums2.size(); i++)
-        q[i] = nums2[i];
 
-    int numuser = nums2.size()/d;
+    int* index = new int[s_index];
+    gatherMPI((string(argv[1])+"/index.bin").c_str(), index, s_index, size, rank, fs);
 
-    nums2.clear();
+    int* level_offset = new int[s_level_offset];
+    gatherMPI((string(argv[1])+"/level_offset.bin").c_str(), level_offset, s_level_offset, size, rank, fs);
+
+    double* vect = new double[n*d];
+    gatherMPI((string(argv[1])+"/vect.bin").c_str(), vect, n, d, size, rank, fs);
+
+    double* q = new double[n*d];
+    gatherMPI((string(argv[1])+"/users.bin").c_str(), q, n, d, size, rank, fs);
 
     int start = rank*(numuser/size);
     int end = (rank+1)*(numuser/size);
