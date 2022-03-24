@@ -166,44 +166,58 @@ void gatherMPI(const char *filename, int* arr, int len, int size, int rank, MPI_
     delete (temp);
 }
 
-void gatherMPI(const char *filename, double* arr, int n, int d, int size, int rank, MPI_File &fs){
+void gatherMPI(const char *filename, double* arr, int len, int size, int rank, MPI_File &fs){
 
-    MPI_Datatype row;
-    MPI_Type_contiguous(d, MPI_DOUBLE, &row);
-    MPI_Type_commit(&row);
-
-    int blockSize =  sizeof(double)*d;
-    int disp = rank*(n/size)*blockSize;
-
-    MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_RDONLY, MPI_INFO_NULL, &fs);
-    MPI_File_set_view(fs, disp, row, MPI_DOUBLE, "native", MPI_INFO_NULL);
-
-    int start = rank*(n/size);
-    int end = (rank+1)*(n/size);
+    int start = rank*(len/size);
+    int end = (rank+1)*(len/size);
     if(rank == size-1){
-        end = n;
+        end = len;
     }
 
-    double *temp = new double[(n + end-start)*d];
-    MPI_File_read(fs, temp, end-start, row, MPI_STATUS_IGNORE);
+    double* temp = new double[len];
 
-    MPI_File_close(&fs);
-    MPI_Allgather(temp, n/size, row, arr, n/size, row, MPI_COMM_WORLD);
+    ifstream infile;
+    infile.open(filename, ios::binary);
 
-    int left = n - (size-1)*(n/size) - n/size;
+    infile.seekg(start*sizeof(double), ios::beg);
+    //cout<<" At rank "<<rank;
+    for(int i=0; i<end-start; i++){
+        double curr;
+        infile.read((char*)&curr, sizeof(double));
+        //cout<<" "<<curr<<" "<<infile.tellg();
+        temp[i] = curr;
+    }
+    
+    MPI_Allgather(temp, len/size, MPI_DOUBLE, arr, len/size,  MPI_DOUBLE, MPI_COMM_WORLD);
+
+    // cout<<" At rank Before "<<rank<<" ";
+
+    // for (int i = 0; i < end-start; i++)
+    // {
+    //     cout<<temp[i]<<" ";
+    // }
+    // cout<<endl;
+
+    
+    int left = len - (size-1)*(len/size) - len/size;
     // cout << "left: " << left<<endl;/
     if(left > 0){
         for(int i=0; i<left; i++){
-            for(int j=0; j<d; j++)
-                temp[i*d + j] = temp[(n/size + i)*d + j];
+            temp[i] = temp[len/size + i];
         }
 
-        MPI_Bcast(temp, left, row, size-1, MPI_COMM_WORLD);
+        MPI_Bcast(temp, left, MPI_DOUBLE, size-1, MPI_COMM_WORLD);
         for(int i=0; i<left; i++){
-            for(int j=0; j<d; j++)
-                arr[(size*(n/size) + i)*d + j] = temp[i*d + j];
+            arr[size*(len/size) + i] = temp[i];
         }
     }
+    // cout<<" At rank After "<<rank<<" ";
+
+    // for (int i = 0; i < len; i++)
+    // {
+    //     cout<<arr[i]<<" ";
+    // }
+    // cout<<endl;
 
     delete (temp);
 }
@@ -250,43 +264,42 @@ int main(int argc, char* argv[]){
     // cout << rank << ": "<<"s_indptr: "<<s_indptr<<endl;
     // cout << rank << ": "<<"d: "<<d<<endl;
 
+    cout << rank << ": reading indptr"<<endl;
     int* indptr = new int[s_indptr];
     gatherMPI((path+"/indptr.bin").c_str(), indptr, s_indptr, size, rank, fs);
 
-
+    cout << rank << ": reading index"<<endl;
     int* index = new int[s_index];
     gatherMPI((path+"/index.bin").c_str(), index, s_index, size, rank, fs);
 
 
+    cout << rank << ": reading level_offset"<<endl;
     int* level_offset = new int[s_level_offset];
     gatherMPI((path+"/level_offset.bin").c_str(), level_offset, s_level_offset, size, rank, fs);
 
-
+    cout << rank << ": vect"<<endl;
     double* vect = new double[n*d];
-    gatherMPI((path+"/vect.bin").c_str(), vect, n, d, size, rank, fs);
+    gatherMPI((path+"/vect.bin").c_str(), vect, n*d, size, rank, fs);
 
-
-    int start = rank*(numuser/size);
-    int end = (rank+1)*(numuser/size);
+   
+   
+    
+    cout << rank << ": reading user"<<endl;
+    int start = (rank*numuser)/size;
+    int end = ((rank+1)*numuser)/size;
     if(rank == size-1){
         end = numuser;
     }
 
     double* q = new double[(end-start)*d];
-    MPI_Datatype row;
-    MPI_Type_contiguous(d, MPI_DOUBLE, &row);
-    MPI_Type_commit(&row);
-
-    int blockSize =  sizeof(double)*d;
-    int disp = rank*(n/size)*blockSize;
-
-    MPI_File_open(MPI_COMM_WORLD,(path+"/users.bin").c_str() , MPI_MODE_RDONLY, MPI_INFO_NULL, &fs);
-    MPI_File_set_view(fs, disp, row, MPI_DOUBLE, "native", MPI_INFO_NULL);
-
-    MPI_File_read(fs, q, end-start, row, MPI_STATUS_IGNORE);
-
-    MPI_File_close(&fs);
-
+    ifstream users;
+    users.open(path + "users.bin", ios::binary);
+    users.seekg(start*d*sizeof(double), ios::beg);
+    for(int i=0; i<end-start;i ++){
+        for(int j=0; j<d; j++)
+            users.read((char*)&q[i*d+j], sizeof(double));
+    }
+    users.close();
 
     int k = stoi(argv[2]);
 
@@ -341,3 +354,5 @@ int main(int argc, char* argv[]){
         cout << "TIME IN SEC: " <<duration.count()/1e6 << endl;
     }
 }
+
+// 
