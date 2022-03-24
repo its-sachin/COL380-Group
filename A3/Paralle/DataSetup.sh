@@ -1,0 +1,1 @@
+mpiexec --bind-to none ./parRead.o $1 $2
