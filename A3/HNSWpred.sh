@@ -1,2 +1,1 @@
-mpirun ./userRead.o $3 $1
-mpirun ./main.o $1 $2 $3 $4
+mpiexec --bind-to none ./main.o $1 $2 $3 $4
