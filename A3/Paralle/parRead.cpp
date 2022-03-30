@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <mpi.h>
 #include <omp.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include <string.h>
 #include<bits/stdc++.h>
 
 using namespace std;
@@ -106,6 +109,9 @@ int main(int argc, char **argv) {
                 nums.push_back(a);
             }
 
+            cout << rank << " : ";
+            for(int i=0; i<nums.size(); i++) cout << nums[i] << " ";
+            cout << endl;
 
             allSizes[rank] = nums.size();
             
@@ -121,12 +127,14 @@ int main(int argc, char **argv) {
             }
 
             MPI_Barrier(MPI_COMM_WORLD);
-            
             outfile.seekp(sizeoftype*writeOffset, std::ios::beg);
 
+            cout << rank << ": PRINTING : " ;
             for(int i=0; i<nums.size(); i++){
-                outfile.write(reinterpret_cast<const char *>(&nums[i]), sizeof(int));
+                cout << nums[i] << " ";
+                outfile.write((char*)&nums[i], sizeoftype);
             }
+            cout << endl;
 
             outfile.close();
             // Val = nums[0];
@@ -140,6 +148,8 @@ int main(int argc, char **argv) {
     if(rank == size - 1){
         sizes[6] /= sizes[2];
         sizes[0] = sizes[2];
+
+        cout << sizes[2] << " " << sizes[6] << endl;
 
         ifstream input;
 
@@ -170,4 +180,5 @@ int main(int argc, char **argv) {
 
     return 0;
 }
+
 

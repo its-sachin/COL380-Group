@@ -328,17 +328,33 @@ int main(int argc, char* argv[]){
     }
     int sizeoftype = sizeof(char);
 
-    MPI_File fh;
-    MPI_File_open(MPI_COMM_SELF, string(argv[3]).c_str(),MPI_MODE_CREATE | MPI_MODE_WRONLY,MPI_INFO_NULL,&fh);
-    MPI_File_set_view(fh, writeOffset*sizeof(char),  MPI_CHAR, MPI_CHAR, "native", MPI_INFO_NULL);
-    MPI_Status status;
 
+        ofstream out(argv[3], ios::binary);
+
+    if(rank == size - 1){
+        writeAll(writeOffset + allSizes[rank], out, sizeoftype);
+    }
+
+    MPI_Barrier(MPI_COMM_WORLD);
+    
+    out.seekp(writeOffset*sizeoftype, ios::beg);
+    
     for(int i=0; i<end-start; i++){
-        MPI_File_write(fh,answers[i].c_str(),answers[i].size()*sizeof(char), MPI_CHAR,&status);
+        out.write(answers[i].c_str(), answers[i].size());
         answers[i].clear();
     }
 
-    MPI_File_close(&fh);
+    // MPI_File fh;
+    // MPI_File_open(MPI_COMM_SELF, string(argv[3]).c_str(),MPI_MODE_CREATE | MPI_MODE_WRONLY,MPI_INFO_NULL,&fh);
+    // MPI_File_set_view(fh, writeOffset*sizeof(char),  MPI_CHAR, MPI_CHAR, "native", MPI_INFO_NULL);
+    // MPI_Status status;
+
+    // for(int i=0; i<end-start; i++){
+    //     MPI_File_write(fh,answers[i].c_str(),answers[i].size()*sizeof(char), MPI_CHAR,&status);
+    //     answers[i].clear();
+    // }
+
+    // MPI_File_close(&fh);
     
     delete(indptr);
     delete(index);
