@@ -43,17 +43,17 @@ bool RMSD(int*** &dataImg,int*** &queryImg,int i,int j,int M,int N,int m,int n,d
         }
         
     }
-    cout<<sqrt(sum)<<" "<<th1<<endl;
+    cout<<i<<" " <<j<<" "<<sqrt(sum)<<" "<<th1<<endl;
     if(sqrt(sum)<=th1){
         return true;
     }
     return false;
     
 }
-pair<int,int> templateSearchBasic(int*** &dataImg,int*** &queryImg,double** &dataImgAvg,int M,int N,int m,int n,double th1,double th2,double queryAvg){
-    for (int i = 0; i < M-m; i++)
+pair<int,int> templateSearchBasic(int*** &dataImg,int*** &queryImg,int** &dataImgAvg,int M,int N,int m,int n,double th1,double th2,double queryAvg){
+    for (int i = 0; i <= M-m; i++)
     {
-        for (int j = 0; j < N-n; j++)
+        for (int j = 0; j <= N-n; j++)
         {
             if(abs(queryAvg-dataImgAvg[i][j])<=th2){      
                 //cout<<"hi "<<endl; 
@@ -93,10 +93,11 @@ int main(int argc, char** argv){
     readImage(dataImg,M,N,dataImgPath);
     readImage(queryImg,m,n,queryImgPath);
 
-
+    th2*=m*n;
            
 
-    double queryAvg = 0;
+    int queryAvg = 0;
+
     for(int i=0; i<m; i++){        
         for(int j=0; j<n; j++){
             //cout<<"Hekkoi "<<end;
@@ -104,76 +105,39 @@ int main(int argc, char** argv){
             queryAvg+=queryImg[i][j][3];
         }
     }
-
-
-    queryAvg/=m*n;
     
-    double **dataImgTotalSum,**dataImgAvg;
-    initialize2Darray<double>(dataImgTotalSum,M,N);
-    initialize2Darray<double>(dataImgAvg,M,N);
+    int **dataImgTotalSum,**dataImgAvg;
+    initialize2Darray<int>(dataImgTotalSum,M,N);
+    initialize2Darray<int>(dataImgAvg,M,N);
     //vector<vector<double>> dataImgTotalSum(m,vector<double>(n));
     for (int i = 0; i <= M - m; i++)
     {
-        for (int j = 0; j < N - n; j++)
+        for (int j = 0; j <= N - n; j++)
         {
-            if(i==0&&j==0){
-                dataImgTotalSum[i][j]  = 0;
-                for (int p = i; p < i+m; p++)
-                {
-                    for (int q = j; q < j+n; q++)
-                    {
-                        dataImgTotalSum[i][j]+=dataImg[p][q][3];
+            dataImgTotalSum[i][j] = 0;
+            if(i == 0){
+                if(j == 0){
+                    for(int a = 0; a < m; a++){
+                        for(int b = 0; b < n; b++){
+                            dataImgTotalSum[i][j]+=dataImg[i+a][j+b][3];
+                        }
                     }
                 }
-            }else if(i==0){
-                //cout<<i<<" "<<j<<endl;
-                //cout<<dataImgTotalSum[i][j-1]<<endl;
-                dataImgTotalSum[i][j]  = dataImgTotalSum[i][j-1];
-                for (int p = i; p < i+n; p++)
-                {
-                    dataImgTotalSum[i][j]-=dataImg[p][j-1][3];
+                else{
+                    dataImgTotalSum[i][j] = dataImgTotalSum[i][j-1];
+                    for(int a=0; a<m; a++){
+                        dataImgTotalSum[i][j]+= dataImg[i+a][j+n-1][3] - dataImg[i+a][j-1][3];
+                    }
                 }
-                for (int p = i; p < i+n; p++)
-                {
-                    dataImgTotalSum[i][j]+=dataImg[p][(j+n-1)-1][3];
-                }               
-            }else if(j==0){
-                dataImgTotalSum[i][j]  = dataImgTotalSum[i-1][j];
-                for (int p = j; p < j+m; p++)
-                {
-                    dataImgTotalSum[i][j]-=dataImg[i-1][p][3];
-                }
-                for (int p = j; p < j+m; p++)
-                {
-                    dataImgTotalSum[i][j]+=dataImg[(i+(m))-1][p][3];
-                }
-            }else{
-                dataImgTotalSum[i][j]  = dataImgTotalSum[i-1][j];
-                for (int p = j; p < j+m; p++)
-                {
-                    dataImgTotalSum[i][j]-=dataImg[i-1][p][3];
-                }
-                for (int p = j; p < j+m; p++)
-                {
-                    dataImgTotalSum[i][j]+=dataImg[(i+(m))-1][p][3];
+            }
+            else{
+                dataImgTotalSum[i][j] = dataImgTotalSum[i-1][j];
+                for(int a=0; a<n; a++){
+                    dataImgTotalSum[i][j]+= dataImg[i+m-1][j+a][3] - dataImg[i-1][j+a][3];
                 }
             }
         }
-        
     }
-
-    for (int i = 0; i <= M - m; i++)
-    {
-        for (int j = 0; j < N - n; j++)
-        {
-            dataImgAvg[i][j] = dataImgTotalSum[i][j]/(m*n);
-            //cout<<dataImgAvg[i][j]<<endl;
-        }
-    }    
-
-    pair<int,int> pos = templateSearchBasic(dataImg,queryImg,dataImgAvg,M,N,m,n,th1,th2,queryAvg);
+    pair<int,int> pos = templateSearchBasic(dataImg,queryImg,dataImgTotalSum,M,N,m,n,th1,th2,queryAvg);
     cout<<"Res: "<<pos.first<<" "<<pos.second<<endl;
-    
-
-
 }

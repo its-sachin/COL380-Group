@@ -28,14 +28,23 @@ def writeImg(path):
                 data.write(str(img[i][j][k])+" ")
     data.close()
 
-# dataimg = readImg("data_image.txt")
+dataimg = readImg("data_image.txt")
 # queryimg = readImg("query_image.txt")
 
-# cv2.imshow("dataimage", dataimg)
+crop_img = dataimg[100:200, 100:200]
+cv2.imshow("dataimage", dataimg)
+cv2.imshow('qimg', crop_img)
+data = open('query_image3.txt', "w")
+data.write(str(100)+" "+str(100)+"\n")
+for i in range(100):
+    for j in range(100):
+        for k in range(3):
+            data.write(str(crop_img[i][j][k])+" ")
+data.close()
 # cv2.imshow("queryimg", queryimg)
-# cv2.waitKey()
+cv2.waitKey()
 
 # writeImg('query_image2.jpg')
-q2 = readImg('query_image2.txt')
-cv2.imshow('q2', q2)
-cv2.waitKey()
+# q2 = readImg('query_image2.txt')
+# cv2.imshow('q2', q2)
+# cv2.waitKey()
