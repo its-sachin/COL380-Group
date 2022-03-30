@@ -30,6 +30,16 @@ void readImage(int*** img, int &m, int &n, string fileName){
 }
 
 
+template <typename T>
+T** initialize2Darray(T** arr,int m,int n) {
+    arr = new T*[m];
+    for (int i = 0; i < m; i++)
+    {
+        arr[i] = new T[n];
+    }
+    return arr;
+}
+
 
 int main(int argc, char** argv){
     string dataImgPath = argv[1];
@@ -54,20 +64,65 @@ int main(int argc, char** argv){
     }
 
     queryAvg/=m*n;
-
-    for(int i=0; i<M-m; i++){
-        for(int j=0; j<N-n; j++){
-            int sum = 0;
-            for(int k=0; k<m; k++){
-                for(int l=0; l<n; l++){
-                    sum+=dataImg[i+k][j+l][3];
+    
+    double **dataImgTotalSum;
+    dataImgTotalSum = initialize2Darray<double>(dataImgTotalSum,M,N);
+    //vector<vector<double>> dataImgTotalSum(m,vector<double>(n));
+    for (int i = 0; i <= M - m; i++)
+    {
+        for (int j = 0; j < N - n; j++)
+        {
+            if(i==0&&j==0){
+                dataImgTotalSum[i][j]  = 0;
+                for (int p = i; p < i+m; p++)
+                {
+                    for (int q = j; q < j+n; q++)
+                    {
+                        dataImgTotalSum[i][j]+=dataImg[p][q][3];
+                    }
+                    
+                }
+            }else if(i==0){
+                for (int p = i; p < i+n; p++)
+                {
+                    dataImgTotalSum[i][j]-=dataImg[p][j-1][3];
+                }
+                for (int p = i; p < i+n; p++)
+                {
+                    dataImgTotalSum[i][j]+=dataImg[p][(j+n-1)-1][3];
+                }               
+            }else if(j==0){
+                for (int p = j; p < j+m; p++)
+                {
+                    dataImgTotalSum[i][j]-=dataImg[i-1][p][3];
+                }
+                for (int p = j; p < j+m; p++)
+                {
+                    dataImgTotalSum[i][j]+=dataImg[(i+(m))-1][p][3];
+                }
+            }else{
+                for (int p = i; p < i+n; p++)
+                {
+                    dataImgTotalSum[i][j]-=dataImg[p][j-1][3];
+                }
+                for (int p = i; p < i+n; p++)
+                {
+                    dataImgTotalSum[i][j]+=dataImg[p][(j+n-1)-1][3];
+                }
+                for (int p = j; p < j+m; p++)
+                {
+                    dataImgTotalSum[i][j]-=dataImg[i-1][p][3];
+                }
+                for (int p = j; p < j+m; p++)
+                {
+                    dataImgTotalSum[i][j]+=dataImg[(i+(m))-1][p][3];
                 }
             }
-            sum = sum/(m*n);
-            if(abs(sum-queryAvg) <= th2){
-                // do detailed matching
-            }
         }
+        
     }
+    
+    
+
 
 }
