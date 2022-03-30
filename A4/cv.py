@@ -17,9 +17,25 @@ def readImg(path):
                         img[i][j][k] = int(line[3*(i*n+j)+k])
     return img
 
-dataimg = readImg("data_image.txt")
-queryimg = readImg("query_image.txt")
+def writeImg(path):
+    img = cv2.imread(path)
+    m, n, _ = img.shape
+    data = open(path[:-3] + "txt", "w")
+    data.write(str(m)+" "+str(n)+"\n")
+    for i in range(m):
+        for j in range(n):
+            for k in range(3):
+                data.write(str(img[i][j][k])+" ")
+    data.close()
 
-cv2.imshow("dataimage", dataimg)
-cv2.imshow("queryimg", queryimg)
+# dataimg = readImg("data_image.txt")
+# queryimg = readImg("query_image.txt")
+
+# cv2.imshow("dataimage", dataimg)
+# cv2.imshow("queryimg", queryimg)
+# cv2.waitKey()
+
+# writeImg('query_image2.jpg')
+q2 = readImg('query_image2.txt')
+cv2.imshow('q2', q2)
 cv2.waitKey()
