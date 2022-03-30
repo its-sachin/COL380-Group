@@ -31,13 +31,13 @@ def writeImg(path):
 dataimg = readImg("data_image.txt")
 # queryimg = readImg("query_image.txt")
 
-crop_img = dataimg[100:200, 100:200]
+crop_img = dataimg[0:200, 0:200]
 cv2.imshow("dataimage", dataimg)
 cv2.imshow('qimg', crop_img)
-data = open('query_image3.txt', "w")
-data.write(str(100)+" "+str(100)+"\n")
-for i in range(100):
-    for j in range(100):
+data = open('data_image1.txt', "w")
+data.write(str(200)+" "+str(200)+"\n")
+for i in range(200):
+    for j in range(200):
         for k in range(3):
             data.write(str(crop_img[i][j][k])+" ")
 data.close()
