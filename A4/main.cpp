@@ -4,6 +4,28 @@
 
 using namespace std;
 
+int*** initialize3Darray(int*** arr,int m,int n,int s){
+    arr = new int**[m];
+    for (int i = 0; i < m; i++)
+    {
+        arr[i] = new int*[n];
+        for (int j = 0; j < n; j++)
+        {
+            arr[i][j] = new int[s];
+        }
+        
+    }
+    return arr;
+}
+int** initialize2Darray(int** arr,int m,int n){
+    arr = new int*[m];
+    for (int i = 0; i < m; i++)
+    {
+        arr[i] = new int[n];
+    }
+    return arr;
+}
+
 int main(int argc, char** argv){
     string dataImgPath = argv[1];
     string queryImgPath = argv[2];
@@ -14,17 +36,25 @@ int main(int argc, char** argv){
     ifstream datafile; 
     datafile.open(dataImgPath); 
 
-    int m,n;   
-    datafile>>m;
-    datafile>>n;
-
-    vector<vector<vector<int>>> dataImg(m, vector<vector<int>>(n, vector<int>(3)));
-    vector<vector<int>> dataImgGrey(m,vector<int>(n));
+    int mDataImg,nDataImg;   
+    datafile>>mDataImg;
+    datafile>>nDataImg;
 
 
-    for (int i = 0; i < m; i++)
+    int ***dataImg;
+    int ***queryImg;
+    int **dataImgGrey;
+    int **queryImgGrey;
+    dataImg = initialize3Darray(dataImg,mDataImg,nDataImg,3);
+    dataImgGrey = initialize2Darray(dataImgGrey,mDataImg,nDataImg);
+
+    //vector<vector<vector<int>>> dataImg(m, vector<vector<int>>(n, vector<int>(3)));
+    //vector<vector<int>> dataImgGrey(m,vector<int>(n));
+
+
+    for (int i = 0; i < mDataImg; i++)
     {
-        for (int j = 0; j < n; j++)
+        for (int j = 0; j < nDataImg; j++)
         {
             int sum = 0;
             for (int k = 0; k < 3; k++)
@@ -35,20 +65,23 @@ int main(int argc, char** argv){
             dataImgGrey[i][j] = sum/3; 
         }
     }
+
     datafile.close();
 
     ifstream queryfile; 
     queryfile.open(queryImgPath); 
 
-    m,n;   
-    queryfile>>m;
-    queryfile>>n;
+    int mQueryImg,nQueryImg;   
+    queryfile>>mQueryImg;
+    queryfile>>nQueryImg;
 
-    vector<vector<vector<int>>> queryImg(m, vector<vector<int>>(n, vector<int>(3)));
-    vector<vector<int>> queryImgGrey(m,vector<int>(n));
-    for (int i = 0; i < m; i++)
+    queryImg = initialize3Darray(queryImg,mQueryImg,nQueryImg,3);
+    queryImgGrey = initialize2Darray(queryImgGrey,mQueryImg,nQueryImg);
+    // vector<vector<vector<int>>> queryImg(m, vector<vector<int>>(n, vector<int>(3)));
+    // vector<vector<int>> queryImgGrey(m,vector<int>(n));
+    for (int i = 0; i < mQueryImg; i++)
     {
-        for (int j = 0; j < n; j++)
+        for (int j = 0; j < nQueryImg; j++)
         {
             int sum = 0;
             for (int k = 0; k < 3; k++)
@@ -59,6 +92,30 @@ int main(int argc, char** argv){
             queryImgGrey[i][j] = sum/3; 
         }
     }
+
+
+    // for (int i = 0; i < mDataImg; i++)
+    // {
+    //     for (int j = 0; j < nDataImg; j++)
+    //     {
+    //         cout<<dataImg[i][j][0]<<endl;
+    //     }
+        
+    // }
+    
+
+    // vector<vector<double>> dataImgTotalSum(m,vector<double>(n));
+    // for (int i = 0; i <= dataImg.size() - queryImg.size(); i++)
+    // {
+    //     for (int j = 0; j < dataImg[0].size() - queryImg[0].size(); j++)
+    //     {
+    //         if(i==0&&j==0){
+
+    //         }
+    //     }
+        
+    // }
+    
     
 
 
