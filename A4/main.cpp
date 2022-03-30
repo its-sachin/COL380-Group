@@ -4,7 +4,7 @@
 
 using namespace std;
 
-void readImage(int*** img, int &m, int &n, string fileName){
+void readImage(int*** &img, int &m, int &n, string fileName){
 
     ifstream file(fileName);
     file >> m >> n;
@@ -56,12 +56,18 @@ int main(int argc, char** argv){
     readImage(dataImg,M,N,dataImgPath);
     readImage(queryImg,m,n,queryImgPath);
 
+
+           
+
     int queryAvg = 0;
     for(int i=0; i<m; i++){        
         for(int j=0; j<n; j++){
+            //cout<<"Hekkoi "<<end;
+            //cout<<"hello "<<queryImg[i][j][3]<<endl;
             queryAvg+=queryImg[i][j][3];
         }
     }
+
 
     queryAvg/=m*n;
     
@@ -83,6 +89,7 @@ int main(int argc, char** argv){
                     
                 }
             }else if(i==0){
+                dataImgTotalSum[i][j]  = dataImgTotalSum[i][j-1];
                 for (int p = i; p < i+n; p++)
                 {
                     dataImgTotalSum[i][j]-=dataImg[p][j-1][3];
@@ -92,6 +99,7 @@ int main(int argc, char** argv){
                     dataImgTotalSum[i][j]+=dataImg[p][(j+n-1)-1][3];
                 }               
             }else if(j==0){
+                dataImgTotalSum[i][j]  = dataImgTotalSum[i-1][j];
                 for (int p = j; p < j+m; p++)
                 {
                     dataImgTotalSum[i][j]-=dataImg[i-1][p][3];
@@ -101,14 +109,7 @@ int main(int argc, char** argv){
                     dataImgTotalSum[i][j]+=dataImg[(i+(m))-1][p][3];
                 }
             }else{
-                for (int p = i; p < i+n; p++)
-                {
-                    dataImgTotalSum[i][j]-=dataImg[p][j-1][3];
-                }
-                for (int p = i; p < i+n; p++)
-                {
-                    dataImgTotalSum[i][j]+=dataImg[p][(j+n-1)-1][3];
-                }
+                dataImgTotalSum[i][j]  = dataImgTotalSum[i-1][j];
                 for (int p = j; p < j+m; p++)
                 {
                     dataImgTotalSum[i][j]-=dataImg[i-1][p][3];
