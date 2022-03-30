@@ -29,15 +29,52 @@ void readImage(int*** &img, int &m, int &n, string fileName){
     file.close();
 }
 
+bool RMSD(int*** &dataImg,int*** &queryImg,int i,int j,int M,int N,int m,int n,double th1){
+    double sum = 0;
+    for (int p = i; p < i+m; p++)
+    {
+        for (int q = j; q < j+n; q++)
+        {
+            for (int r = 0; r < 3; r++)
+            {
+                sum+=pow(dataImg[p][q][r]-queryImg[p-i][q-j][r],2)/(m*n*3);
+            }
+            
+        }
+        
+    }
+    cout<<sqrt(sum)<<" "<<th1<<endl;
+    if(sqrt(sum)<=th1){
+        return true;
+    }
+    return false;
+    
+}
+pair<int,int> templateSearchBasic(int*** &dataImg,int*** &queryImg,double** &dataImgAvg,int M,int N,int m,int n,double th1,double th2,double queryAvg){
+    for (int i = 0; i < M-m; i++)
+    {
+        for (int j = 0; j < N-n; j++)
+        {
+            if(abs(queryAvg-dataImgAvg[i][j])<=th2){      
+                //cout<<"hi "<<endl; 
+                if(RMSD(dataImg,queryImg,i,j,M,N,m,n,th1)){
+                    return make_pair(i,j);
+                }
+            }
+        }
+        
+    }
+    return make_pair(-1,-1);
+}
+
 
 template <typename T>
-T** initialize2Darray(T** arr,int m,int n) {
+void initialize2Darray(T** &arr,int m,int n) {
     arr = new T*[m];
     for (int i = 0; i < m; i++)
     {
         arr[i] = new T[n];
     }
-    return arr;
 }
 
 
@@ -59,7 +96,7 @@ int main(int argc, char** argv){
 
            
 
-    int queryAvg = 0;
+    double queryAvg = 0;
     for(int i=0; i<m; i++){        
         for(int j=0; j<n; j++){
             //cout<<"Hekkoi "<<end;
@@ -71,8 +108,9 @@ int main(int argc, char** argv){
 
     queryAvg/=m*n;
     
-    double **dataImgTotalSum;
-    dataImgTotalSum = initialize2Darray<double>(dataImgTotalSum,M,N);
+    double **dataImgTotalSum,**dataImgAvg;
+    initialize2Darray<double>(dataImgTotalSum,M,N);
+    initialize2Darray<double>(dataImgAvg,M,N);
     //vector<vector<double>> dataImgTotalSum(m,vector<double>(n));
     for (int i = 0; i <= M - m; i++)
     {
@@ -86,9 +124,10 @@ int main(int argc, char** argv){
                     {
                         dataImgTotalSum[i][j]+=dataImg[p][q][3];
                     }
-                    
                 }
             }else if(i==0){
+                //cout<<i<<" "<<j<<endl;
+                //cout<<dataImgTotalSum[i][j-1]<<endl;
                 dataImgTotalSum[i][j]  = dataImgTotalSum[i][j-1];
                 for (int p = i; p < i+n; p++)
                 {
@@ -122,7 +161,18 @@ int main(int argc, char** argv){
         }
         
     }
-    
+
+    for (int i = 0; i <= M - m; i++)
+    {
+        for (int j = 0; j < N - n; j++)
+        {
+            dataImgAvg[i][j] = dataImgTotalSum[i][j]/(m*n);
+            //cout<<dataImgAvg[i][j]<<endl;
+        }
+    }    
+
+    pair<int,int> pos = templateSearchBasic(dataImg,queryImg,dataImgAvg,M,N,m,n,th1,th2,queryAvg);
+    cout<<"Res: "<<pos.first<<" "<<pos.second<<endl;
     
 
 
