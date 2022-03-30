@@ -124,16 +124,59 @@ int main(int argc, char** argv){
     double **dataImgTotalSum;
     dataImgTotalSum = initialize2Darray<double>(dataImgTotalSum,mDataImg,nDataImg);
     //vector<vector<double>> dataImgTotalSum(m,vector<double>(n));
-    // for (int i = 0; i <= dataImg.size() - queryImg.size(); i++)
-    // {
-    //     for (int j = 0; j < dataImg[0].size() - queryImg[0].size(); j++)
-    //     {
-    //         if(i==0&&j==0){
-
-    //         }
-    //     }
+    for (int i = 0; i <= mDataImg - mQueryImg; i++)
+    {
+        for (int j = 0; j < nDataImg - nQueryImg; j++)
+        {
+            if(i==0&&j==0){
+                dataImgTotalSum[i][j]  = 0;
+                for (int p = i; p < i+mQueryImg; p++)
+                {
+                    for (int q = j; q < j+nQueryImg; q++)
+                    {
+                        dataImgTotalSum[i][j]+=dataImgGrey[p][q];
+                    }
+                    
+                }
+            }else if(i==0){
+                for (int p = i; p < i+nQueryImg; p++)
+                {
+                    dataImgTotalSum[i][j]-=dataImgGrey[p][j-1];
+                }
+                for (int p = i; p < i+nQueryImg; p++)
+                {
+                    dataImgTotalSum[i][j]+=dataImgGrey[p][(j+nQueryImg-1)-1];
+                }               
+            }else if(j==0){
+                for (int p = j; p < j+mQueryImg; p++)
+                {
+                    dataImgTotalSum[i][j]-=dataImgGrey[i-1][p];
+                }
+                for (int p = j; p < j+mQueryImg; p++)
+                {
+                    dataImgTotalSum[i][j]+=dataImgGrey[(i+(mQueryImg))-1][p];
+                }
+            }else{
+                for (int p = i; p < i+nQueryImg; p++)
+                {
+                    dataImgTotalSum[i][j]-=dataImgGrey[p][j-1];
+                }
+                for (int p = i; p < i+nQueryImg; p++)
+                {
+                    dataImgTotalSum[i][j]+=dataImgGrey[p][(j+nQueryImg-1)-1];
+                }
+                for (int p = j; p < j+mQueryImg; p++)
+                {
+                    dataImgTotalSum[i][j]-=dataImgGrey[i-1][p];
+                }
+                for (int p = j; p < j+mQueryImg; p++)
+                {
+                    dataImgTotalSum[i][j]+=dataImgGrey[(i+(mQueryImg))-1][p];
+                }
+            }
+        }
         
-    // }
+    }
     
     
 
