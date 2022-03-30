@@ -19,15 +19,20 @@ int main(int argc, char** argv){
     datafile>>n;
 
     vector<vector<vector<int>>> dataImg(m, vector<vector<int>>(n, vector<int>(3)));
-    
+    vector<vector<int>> dataImgGrey(m,vector<int>(n));
+
+
     for (int i = 0; i < m; i++)
     {
         for (int j = 0; j < n; j++)
         {
+            int sum = 0;
             for (int k = 0; k < 3; k++)
             {
                 datafile>>dataImg[i][j][k];
+                sum+=dataImg[i][j][k];
             }
+            dataImgGrey[i][j] = sum/3; 
         }
     }
     datafile.close();
@@ -40,14 +45,18 @@ int main(int argc, char** argv){
     queryfile>>n;
 
     vector<vector<vector<int>>> queryImg(m, vector<vector<int>>(n, vector<int>(3)));
+    vector<vector<int>> queryImgGrey(m,vector<int>(n));
     for (int i = 0; i < m; i++)
     {
         for (int j = 0; j < n; j++)
         {
+            int sum = 0;
             for (int k = 0; k < 3; k++)
             {
                 queryfile>>queryImg[i][j][k];
+                sum+=queryImg[i][j][k];
             }
+            queryImgGrey[i][j] = sum/3; 
         }
     }
     
