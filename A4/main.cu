@@ -15,13 +15,10 @@ void readImage(int* &img, int &m, int &n, string fileName){
 
     img = new int[m*n*4];
 
-    for (int i = 0; i < m; i++)
-    {
-        for (int j = 0; j < n; j++)
-        {
+    for (int i = 0; i < m; i++){
+        for (int j = 0; j < n; j++){
             int sum = 0;
-            for (int k = 0; k < 3; k++)
-            {
+            for (int k = 0; k < 3; k++){
                 file>>img[(i*n+j)*4+k];
                 sum+=img[(i*n+j)*4+k];
             }
@@ -80,6 +77,16 @@ void checkGeneral(int * &dataImg, int * &queryImg, int M, int N, int m, int n, i
     }
 }
 
+int getAvg(int* &queryImg, int m, int n){
+    int queryAvg = 0;
+
+    for(int i=0; i<m; i++){        
+        for(int j=0; j<n; j++){
+            queryAvg+=queryImg[(i*n+j)*4+3];
+        }
+    }
+    return queryAvg;
+}
 
 
 int main(int argc, char** argv)
@@ -99,24 +106,18 @@ int main(int argc, char** argv)
     readImage(queryImg,m,n,queryImgPath);
 
     th2*=m*n;
-           
-
-    int queryAvg = 0;
-
-    for(int i=0; i<m; i++){        
-        for(int j=0; j<n; j++){
-            queryAvg+=queryImg[(i*n+j)*4+3];
-        }
-    }
     
     int *d_dataImg;
-    int* d_queryImg;
+    int *d_queryImg;
    
     cudaMalloc(&d_dataImg, (M*N*4)*sizeof(int));
     cudaMalloc(&d_queryImg, (m*n*4)*sizeof(int));
 
     cudaMemcpy(d_dataImg, dataImg, (M*N*4)*sizeof(int), cudaMemcpyHostToDevice);
     cudaMemcpy(d_queryImg, queryImg, (m*n*4)*sizeof(int), cudaMemcpyHostToDevice);
+
+    int queryAvg = getAvg(queryImg, m,n);
+    checkGeneral(dataImg, queryImg, M,N,m,n,queryAvg,th1,th2,45*M_PI/180);
 
     cudaFree(d_dataImg);
     cudaFree(d_queryImg);
