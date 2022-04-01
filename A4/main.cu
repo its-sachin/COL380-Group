@@ -29,6 +29,7 @@ void readImage(int* &img, int &m, int &n, string fileName){
 }
 
 
+__device__
 float getInterpolated(int a, int b, int i, int j, float theta, int M, int N, int* &dataImg, int ind){
     float xx = a + i*cos(theta) - j*sin(theta);
     float yy = b + i*sin(theta) + j*cos(theta);
@@ -46,33 +47,42 @@ float getInterpolated(int a, int b, int i, int j, float theta, int M, int N, int
     return ( (z00*cx + z10*x)*(1-y) + (z01*cx + z11*x)*y );
 }
 
+__global__
 void checkGeneral(int * &dataImg, int * &queryImg, int M, int N, int m, int n, int queryAvg, double th1, double th2, float theta){
 
-    for(int a=48; a<52; a++){
-        for(int b=48; b<52;b ++){
-            float sum = 0;
-            for(int i =0; i<m; i++){
-                for(int j=0; j<n; j++){
-                    // cout << sum << endl;
-                    sum += getInterpolated(a,b,i,j,theta,M,N,dataImg,3);
+    int a,b;
+    int absi = blockIdx.x*M*N + threadIdx.x;
+    a = absi/N;
+    b = absi%N;
+
+    printf("blockdin: %d\n", blockIdx.x);
+    if(absi > 20000)
+    printf("abs: %d a: %d b: %d\n",absi, a, b);
+    float sum = 0;
+    for(int i =0; i<m; i++){
+        for(int j=0; j<n; j++){
+            // cout << sum << endl;
+            sum += getInterpolated(a,b,i,j,theta,M,N,dataImg,3);
+        }
+    }
+    // cout << "a: " << a << " b: " << b << " " << abs(queryAvg-sum)/(m*n) << endl;
+    if(abs(queryAvg-sum)<=th2){
+        double sum = 0;
+        for (int i = 0; i<m; i++){
+            for (int j = 0; j<n; j++){
+                for (int r = 0; r < 3; r++){
+                    sum+=pow(getInterpolated(a,b,i,j,theta,M,N,dataImg,r)-queryImg[(i*n+j)*4+r],2)/(m*n*3);
                 }
             }
-            cout << "a: " << a << " b: " << b << " " << abs(queryAvg-sum)/(m*n) << endl;
-            if(abs(queryAvg-sum)<=th2){
-                double sum = 0;
-                for (int i = 0; i<m; i++){
-                    for (int j = 0; j<n; j++){
-                        for (int r = 0; r < 3; r++){
-                            sum+=pow(getInterpolated(a,b,i,j,theta,M,N,dataImg,r)-queryImg[(i*n+j)*4+r],2)/(m*n*3);
-                        }
-                    }
-                }
-                cout << "   -> " <<sqrt(sum) << endl;
-                if(sqrt(sum)<=th1){
-                    cout<<"Res: "<<M-round(a + m*cos(theta) )<<" "<<round(b + n*sin(theta) )<< " " << (int)(theta*180/M_PI) << endl;
-                    return;
-                }
-            }
+        }
+        // cout << "   -> " <<sqrt(sum) << endl;
+        printf("    -> %f\n",sqrt(sum));
+        if(sqrt(sum)<=th1){
+            int ansx = M-round(a + m*cos(theta) );
+            int ansy = round(b + n*sin(theta) );
+            int anst = (int)(theta*180/M_PI);
+            printf("res = %d %d %d\n",ansx,ansy,anst);
+            return;
         }
     }
 }
@@ -117,10 +127,12 @@ int main(int argc, char** argv)
     cudaMemcpy(d_queryImg, queryImg, (m*n*4)*sizeof(int), cudaMemcpyHostToDevice);
 
     int queryAvg = getAvg(queryImg, m,n);
-    checkGeneral(dataImg, queryImg, M,N,m,n,queryAvg,th1,th2,45*M_PI/180);
+    // checkGeneral(dataImg, queryImg, M,N,m,n,queryAvg,th1,th2,45*M_PI/180);
+
+    checkGeneral<<<(N*M+255)/256, 256>>>(d_dataImg, d_queryImg, M,N,m,n,queryAvg,th1,th2,45*M_PI/180);
 
     cudaFree(d_dataImg);
     cudaFree(d_queryImg);
-    free(dataImg);
-    free(queryImg);
+    delete(dataImg);
+    delete(queryImg);
 }

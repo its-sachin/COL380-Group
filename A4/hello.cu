@@ -9,7 +9,7 @@ void saxpy(int n, float a, float *x, float *y)
 
 int main(void)
 {
-  int N = 4000;
+  int N = 1<<20;
   float *x, *y, *d_x, *d_y;
   x = (float*)malloc(N*sizeof(float));
   y = (float*)malloc(N*sizeof(float));
