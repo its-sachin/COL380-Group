@@ -51,21 +51,26 @@ __global__
 void checkGeneral(int * &dataImg, int * &queryImg, int M, int N, int m, int n, int queryAvg, double th1, double th2, float theta){
 
     int a,b;
-    int absi = blockIdx.x*M*N + threadIdx.x;
-    a = absi/N;
+    int absi = blockIdx.x*256 + threadIdx.x;
+    a = absi%M;
     b = absi%N;
 
-    printf("blockdin: %d\n", blockIdx.x);
-    if(absi > 20000)
-    printf("abs: %d a: %d b: %d\n",absi, a, b);
+    //printf("blockdin: %d\n", blockIdx.x);
+    // if(absi > 20000)
+    // printf("abs: %d a: %d b: %d\n",absi, a, b);
     float sum = 0;
+    //printf("Before interpol a: %d b: %d %f\n", a, b, abs(queryAvg-sum)/(m*n));
     for(int i =0; i<m; i++){
         for(int j=0; j<n; j++){
-            // cout << sum << endl;
             sum += getInterpolated(a,b,i,j,theta,M,N,dataImg,3);
         }
     }
+
+
     // cout << "a: " << a << " b: " << b << " " << abs(queryAvg-sum)/(m*n) << endl;
+    printf("After interpol a: %d b: %d %f\n", a, b, abs(queryAvg-sum)/(m*n));
+
+
     if(abs(queryAvg-sum)<=th2){
         double sum = 0;
         for (int i = 0; i<m; i++){
@@ -78,8 +83,8 @@ void checkGeneral(int * &dataImg, int * &queryImg, int M, int N, int m, int n, i
         // cout << "   -> " <<sqrt(sum) << endl;
         printf("    -> %f\n",sqrt(sum));
         if(sqrt(sum)<=th1){
-            int ansx = M-round(a + m*cos(theta) );
-            int ansy = round(b + n*sin(theta) );
+            int ansx = M-std::round(a + m*cos(theta) );
+            int ansy = std::round(b + n*sin(theta) );
             int anst = (int)(theta*180/M_PI);
             printf("res = %d %d %d\n",ansx,ansy,anst);
             return;
@@ -129,7 +134,7 @@ int main(int argc, char** argv)
     int queryAvg = getAvg(queryImg, m,n);
     // checkGeneral(dataImg, queryImg, M,N,m,n,queryAvg,th1,th2,45*M_PI/180);
 
-    checkGeneral<<<(N*M+255)/256, 256>>>(d_dataImg, d_queryImg, M,N,m,n,queryAvg,th1,th2,45*M_PI/180);
+    checkGeneral<<<(N*M+255)/256, 256>>>(d_dataImg, d_queryImg, M,N,m,n,queryAvg,th1,th2,0*M_PI/180);
 
     cudaFree(d_dataImg);
     cudaFree(d_queryImg);
