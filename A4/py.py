@@ -3,8 +3,8 @@ import numpy as np
 import cv2
 
 def getInterpolated( a,  b,  i,  j, theta,  M,  N, dataImg,  ind, top=False):
-    xx = a + i*cos(theta) - j*sin(theta)
-    yy = b + i*sin(theta) + j*cos(theta)
+    xx = a - i*cos(theta) - j*sin(theta)
+    yy = b - i*sin(theta) + j*cos(theta)
     x = xx - floor(xx)
     y = yy - floor(yy) 
     if(xx<0 or ceil(xx)>=M or yy<0 or ceil(yy)>=N):
@@ -18,8 +18,8 @@ def getInterpolated( a,  b,  i,  j, theta,  M,  N, dataImg,  ind, top=False):
 
 def checkGeneral( dataImg, queryImg,  M,  N,  m,  n,  queryAvg,  th1,  th2, theta, datacv, querycv):
 
-    for a in range(47,55):
-        for b in range(47,55):
+    for a in range(199,201):
+        for b in range(99,101):
             
             sum = 0
             for i in range(m):
@@ -35,7 +35,7 @@ def checkGeneral( dataImg, queryImg,  M,  N,  m,  n,  queryAvg,  th1,  th2, thet
                         for r in range(3):
                             x,y,v = getInterpolated(a,b,i,j,theta,M,N,dataImg,r,True)
                             # print('x:',x,'y:',y,'interp : ' ,v, 'query : ', queryImg[i][j][r], 'data:',dataImg[int(x)][int(y)][r])
-                            sum+=pow(v-queryImg[i][j][r],2)/(m*n*3)
+                            sum+=pow(v-queryImg[m-i-1][j][r],2)/(m*n*3)
                         # datacv = cv2.circle(datacv, (int(y),int(x)), 2, 255, 2)
                         # querycv = cv2.circle(querycv, (int(j),int(i)), 2, 255, 2)
                         # cv2.imshow('datacv',datacv)
@@ -43,7 +43,7 @@ def checkGeneral( dataImg, queryImg,  M,  N,  m,  n,  queryAvg,  th1,  th2, thet
                         # cv2.waitKey()
                 print("   -> -> -> -> -> -> -> ",a,b ,sqrt(sum))
                 if(sqrt(sum)<=th1):
-                    print("Res: ",a,b)
+                    print("Res: ",M-a-1,b)
                     return
                 
 
@@ -70,7 +70,7 @@ def readImg(path):
     return nump,img,m,n
 
 datacv,dataImg,M,N = readImg("data_image.txt")
-querycv,queryImg,m,n = readImg("query_image.txt")
+querycv,queryImg,m,n = readImg("query_image3.txt")
 
 th1 = 10
 th2 = 0.5*m*n
@@ -80,4 +80,4 @@ for i in range(m):
     for j in range(n):
         queryAvg+=queryImg[i][j][3]
 
-checkGeneral(dataImg,queryImg,M,N,m,n,queryAvg,th1,th2,45*pi/180,datacv,querycv)
+checkGeneral(dataImg,queryImg,M,N,m,n,queryAvg,th1,th2,0*pi/180,datacv,querycv)
