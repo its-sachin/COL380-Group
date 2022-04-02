@@ -274,16 +274,29 @@ int main(int argc, char** argv)
                     container* c = new container(i,j,angles[k]);
                     pq.push({result[i*N*3+j*3+k], c});
                 }
+                if(pq.size()>maxN)pq.pop();
             }
         }
     }
-
-    std::cout << std::endl;
-    for(int i=0; i<maxN && pq.size() > 0; i++){
-        std::pair<float, container*> p = pq.top();
+    //std::cout<<"pq size: "<<pq.size()<<std::endl;
+    int pqSize = pq.size();
+    std::vector<std::pair<float, container*>> vecRes;
+    for(int i = 0;i<pqSize;i++){
+        vecRes.push_back(pq.top());
         pq.pop();
-        printf("Res[%d]: %d %d %d %f\n",i,p.second->x,p.second->y,p.second->angle,p.first);
     }
+    std::ofstream outfile("output.txt");
+    std::cout << std::endl;
+    reverse(vecRes.begin(), vecRes.end());
+    for(int i = 0;i<vecRes.size();i++){
+        outfile << vecRes[i].second->x << " " << vecRes[i].second->y << " " << vecRes[i].second->angle << std::endl;
+        printf("Res[%d]: %d %d %d %f\n",i,vecRes[i].second->x,vecRes[i].second->y,vecRes[i].second->angle,vecRes[i].first);
+    }
+    // for(int i=0; i<maxN && pq.size() > 0; i++){
+    //     std::pair<float, container*> p = pq.top();
+    //     pq.pop();
+    //     printf("Res[%d]: %d %d %d %f\n",i,p.second->x,p.second->y,p.second->angle,p.first);
+    // }
 
     auto end = std::chrono::high_resolution_clock::now();
     std::cout << "Computation Time: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - mid).count() << " ms" << std::endl;
