@@ -1,5 +1,6 @@
 #include <bits/stdc++.h>
 #include <chrono>
+#include <iostream>
 // using namespace std;
 
 void readImage(int* &img, int &m, int &n, std::string fileName, long long *&prefixSum, bool isData = false){
@@ -97,51 +98,51 @@ void checkGeneral(int * dataImg, int * queryImg, long long * prefixSum, int M, i
     // printf("abs: %d a: %d b: %d\n",absi, a, b);
 
     for(int t=0; t<3; t++){
-        // float sum = 0;    
-        // float theta = angles[t]*pi/180;
+        float sum = 0;    
+        float theta = angles[t]*pi/180;
 
-        // // printf("Before interpol bid: %d tid: %d\n", blockIdx.x, threadIdx.x);
+        // printf("Before interpol bid: %d tid: %d\n", blockIdx.x, threadIdx.x);
 
-        // for(int i =0; i<m; i++){
-        //     for(int j=0; j<n; j++){
-        //         sum += getInterpolated(a,b,i,j,theta,M,N,dataImg,3);
-        //     }
-        // }
+        for(int i =0; i<m; i++){
+            for(int j=0; j<n; j++){
+                sum += getInterpolated(a,b,i,j,theta,M,N,dataImg,3);
+            }
+        }
 
         //printf("a: %d b: %d val: %d\n", a, b, abs(queryAvg-sum));
 
-        float theta = angles[t]*pi/180;
+        // float theta = angles[t]*pi/180;
 
-        int a1 = a - n*sin(theta);
-        int b1 = b;
-        int b2 = b + n*cos(theta) + m*sin(theta);
-        int a2 = a + m*cos(theta);
-        long long p,q,r,s;
-        if(a1*N+b1<0 || a1*N+b1>=M*N){
-            p = 0;
-        }else{
-            p = prefixSum[a1*N+b1];
-        }
-        if(a2*N+b2<0 || a2*N+b2>=M*N){
-            q = 0;
-        }else{
-            q = prefixSum[a2*N+b2];
-        }
-        if(a1*N+b2<0 || a1*N+b2>=M*N){
-            r = 0;
-        }else{
-            r = prefixSum[a1*N+b2];
-        }
-        if(a2*N+b1<0 || a2*N+b1>=M*N){
-            s = 0;
-        }else{
-            s = prefixSum[a2*N+b1];
-        }
+        // int a1 = a - n*sin(theta);
+        // int b1 = b;
+        // int b2 = b + n*cos(theta) + m*sin(theta);
+        // int a2 = a + m*cos(theta);
+        // long long p,q,r,s;
+        // if(a1*N+b1<0 || a1*N+b1>=M*N){
+        //     p = 0;
+        // }else{
+        //     p = prefixSum[a1*N+b1];
+        // }
+        // if(a2*N+b2<0 || a2*N+b2>=M*N){
+        //     q = 0;
+        // }else{
+        //     q = prefixSum[a2*N+b2];
+        // }
+        // if(a1*N+b2<0 || a1*N+b2>=M*N){
+        //     r = 0;
+        // }else{
+        //     r = prefixSum[a1*N+b2];
+        // }
+        // if(a2*N+b1<0 || a2*N+b1>=M*N){
+        //     s = 0;
+        // }else{
+        //     s = prefixSum[a2*N+b1];
+        // }
 
-        // long long sum = (p + q) - (r + s);
-        long long sum = (p -r) + (q - s);
-        //printf("a: %d \n", sum);
-        //printf("p: %d q: %d r: %d , s: %d , a1*N+b1: %d , a2*N+b2: %d , a1*N+b2: %d ,a2*N+b1: %d  \n", p, q, r, s, a1*N+b1, a2*N+b2, a1*N+b2, a2*N+b1);
+        // long long sum = p + q - r - s;
+        //printf("N: %d mulFactor: %f , a: %d ,a1: %d \n",N,n*sin(theta),a,a1);
+        //printf("a: %d , b: %d Prefix sum : %d \n", a,b,prefixSum[a*N+b]);
+        //printf("a: %d , b: %d p: %d q: %d r: %d , s: %d , a1*N+b1: %d , a2*N+b2: %d , a1*N+b2: %d ,a2*N+b1: %d ,a1:%d a2:%d b1:%d b2:%d theta: %f\n", a,b,p, q, r, s, a1*N+b1, a2*N+b2, a1*N+b2, a2*N+b1,a1,a2,b1,b2,theta);
         //printf("a1: %d b1: %d a2: %d b2: %d  P: %d Q: %d R: %d S: %d theta: a:%d b:%d n:%d m*sin(theta)%f \n ", a1, b1,a2,b2 ,a1*N+b1, a2*N+b2, a1*N+b2, a2*N+b1 ,a,b,n,m*sin(theta));
         //printf("a1: %d b1: %d a2: %d b2: %d  P: %d Q: %d R: %d S: %d theta: %f \n ", a1, b1,a2,b2 ,p,q,r,s,theta);
         //printf("a: %d b: %d val: %d\n", a, b, abs(queryAvg-sum));
@@ -195,6 +196,8 @@ class container{
         angle = c;
     }
 };
+
+
 
 
 int main(int argc, char** argv)
@@ -261,7 +264,7 @@ int main(int argc, char** argv)
 
     cudaMemcpy(result, d_result, M*N*3*sizeof(float), cudaMemcpyDeviceToHost);
 
-    std::priority_queue <std::pair<float, container*> > pq;
+    std::priority_queue <std::pair<float, container*>> pq;
     int angles[3] = {45,0,-45};
     
     for(int i=0; i<M; i++){
@@ -272,14 +275,28 @@ int main(int argc, char** argv)
                     container* c = new container(i,j,angles[k]);
                     pq.push({result[i*N*3+j*3+k], c});
                 }
+                if(pq.size()>maxN){
+                    pq.pop();
+                }
             }
         }
     }
 
-    std::cout << std::endl;
+    std::cout << "Priority queue size : "<<pq.size() << std::endl;
+    std::vector<std::pair<float, container*>> finalRes;
+    //std::sort_heap(pq.begin(), pq.end());
     for(int i=0; i<maxN && pq.size() > 0; i++){
         std::pair<float, container*> p = pq.top();
+        finalRes.push_back(p);
         pq.pop();
+        //printf("Res[%d]: %d %d %d %f\n",i,p.second->x,p.second->y,p.second->angle,p.first);
+    }
+    std::ofstream outFile("output.txt");
+    
+    for(int i = finalRes.size()-1;i>=0;i--){
+        std::pair<float, container*> p;
+        p = finalRes[i];
+        outFile <<p.second->x <<" "<<p.second->y<<" "<<p.second->angle<<"\n";
         printf("Res[%d]: %d %d %d %f\n",i,p.second->x,p.second->y,p.second->angle,p.first);
     }
 
