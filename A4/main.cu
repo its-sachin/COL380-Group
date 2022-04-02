@@ -76,10 +76,20 @@ float getInterpolated(int a, int b, int i, int j, float theta, int M, int N, int
 __global__
 void checkGeneral(int * dataImg, int * queryImg, long long * prefixSum, int M, int N, int m, int n, int queryAvg, double th1, double th2, float pi, float* result){
 
+    // printf("%d\n", prefixSum[200]);
+    // printf("M: %d N:%d",M,N);
+    // for(int i = 0;i<M*N;i++){
+    //     printf("i:%d  \n",i);
+    //     //printf("i:%d %d \n",i, prefixSum[i]);
+    // }
+    // return;
+    
     int a,b;
     int absi = blockIdx.x*256 + threadIdx.x;
     a = absi/N;
     b = absi%N;
+
+    //printf("On a b %d %d %d \n",a,b,prefixSum[a*N+b]);
 
     int angles[3] = {45,0,-45};
     // printf("At start bid: %d tid: %d\n", blockIdx.x, threadIdx.x);
@@ -99,35 +109,51 @@ void checkGeneral(int * dataImg, int * queryImg, long long * prefixSum, int M, i
         // }
 
         //printf("a: %d b: %d val: %d\n", a, b, abs(queryAvg-sum));
-        
+
         float theta = angles[t]*pi/180;
 
         int a1 = a - n*sin(theta);
         int b1 = b;
         int b2 = b + n*cos(theta) + m*sin(theta);
         int a2 = a + m*cos(theta);
-        long long p = prefixSum[a1*N+b1];
-        long long q = prefixSum[a2*N+b2];
-        long long r = prefixSum[a1*N+b2];
-        long long s = prefixSum[a2*N+b1];
-        if(a1*N+b1<0 or a1*N+b1>=M*N){
+        long long p,q,r,s;
+        if(a1*N+b1<0 || a1*N+b1>=M*N){
             p = 0;
-        }else if(a2*N+b2<0 or a2*N+b2>=M*N){
-            q = 0;
-        }else if(a1*N+b2<0 or a1*N+b2>=M*N){
-            r = 0;
-        }else if(a2*N+b1<0 or a2*N+b1>=M*N){
-            s = 0;
+        }else{
+            p = prefixSum[a1*N+b1];
         }
+        if(a2*N+b2<0 || a2*N+b2>=M*N){
+            q = 0;
+        }else{
+            q = prefixSum[a2*N+b2];
+        }
+        if(a1*N+b2<0 || a1*N+b2>=M*N){
+            r = 0;
+        }else{
+            r = prefixSum[a1*N+b2];
+        }
+        if(a2*N+b1<0 || a2*N+b1>=M*N){
+            s = 0;
+        }else{
+            s = prefixSum[a2*N+b1];
+        }
+        // for(int i = a1;i<a2;i++){
+        //     for(int j=b1; j<b2; j++){
+        //         printf("(At i:%d j:%d prefixSum: %d )",i,j, prefixSum[i*N+j]);
+        //     }
+        // }
+        // printf("\n");
 
-        long long sum = p + q - r - s;
-        //printf("p: %d q: %d r: %d , s: %d \n", p, q, r, s);
-        //printf("a1: %d b1: %d a2: %d b2: %d  P: %d Q: %d R: %d S: %d theta: %f \n ", a1, b1,a2,b2 ,a1*N+b1, a2*N+b2, a1*N+b2, a2*N+b1 ,theta);
-        printf("a1: %d b1: %d a2: %d b2: %d  P: %d Q: %d R: %d S: %d theta: %f \n ", a1, b1,a2,b2 ,p,q,r,s,theta);
+        // long long sum = (p + q) - (r + s);
+        long long sum = (p -r) + (q - s);
+        //printf("a: %d \n", sum);
+        //printf("p: %d q: %d r: %d , s: %d , a1*N+b1: %d , a2*N+b2: %d , a1*N+b2: %d ,a2*N+b1: %d  \n", p, q, r, s, a1*N+b1, a2*N+b2, a1*N+b2, a2*N+b1);
+        //printf("a1: %d b1: %d a2: %d b2: %d  P: %d Q: %d R: %d S: %d theta: a:%d b:%d n:%d m*sin(theta)%f \n ", a1, b1,a2,b2 ,a1*N+b1, a2*N+b2, a1*N+b2, a2*N+b1 ,a,b,n,m*sin(theta));
+        //printf("a1: %d b1: %d a2: %d b2: %d  P: %d Q: %d R: %d S: %d theta: %f \n ", a1, b1,a2,b2 ,p,q,r,s,theta);
         //printf("a: %d b: %d val: %d\n", a, b, abs(queryAvg-sum));
         //int sum = prefixSum[a1*N + b1] + prefixSum[a2*N + b2] - prefixSum[a1*N + b2] - prefixSum[a2*N + b1];
 
-        printf("a: %d b: %d sum: %d , queryAvg: %d , absDiff: %d, th2: %f \n", a, b,sum,queryAvg,abs(queryAvg-sum),th2);
+        // printf("a: %d b: %d sum: %d , queryAvg: %d , absDiff: %d, th2: %f \n", a, b,sum,queryAvg,abs(queryAvg-sum),th2);
 
         if(abs(queryAvg-sum)<=th2){
             double sum = 0;
@@ -196,6 +222,11 @@ int main(int argc, char** argv)
     readImage(dataImg,M,N,dataImgPath,dataPrefix,true);
     readImage(queryImg,m,n,queryImgPath,dataPrefix);
 
+    // std::cout<<"hello \n";
+    // for(int i = 0;i<M*N;i++){
+    //     std::cout<<dataPrefix[i]<<" " <<i<<"\n";
+    // }
+
     th2*=m*n;
     
     int *d_dataImg;
@@ -205,7 +236,7 @@ int main(int argc, char** argv)
    
     cudaMalloc(&d_dataImg, (M*N*4)*sizeof(int));
     cudaMalloc(&d_queryImg, (m*n*4)*sizeof(int));
-    cudaMalloc(&d_dataPrefix, (M*N)*sizeof(int));
+    cudaMalloc(&d_dataPrefix, (M*N)*sizeof(long long));
 
     cudaMemcpy(d_dataImg, dataImg, (M*N*4)*sizeof(int), cudaMemcpyHostToDevice);
     cudaMemcpy(d_queryImg, queryImg, (m*n*4)*sizeof(int), cudaMemcpyHostToDevice);
@@ -230,7 +261,9 @@ int main(int argc, char** argv)
 
     std::cout << "Pre processing Time: " << std::chrono::duration_cast<std::chrono::milliseconds>(mid - start).count() << " ms" << std::endl;
 
+    //std::cout << d_dataPrefix[0]<<" \n";
     checkGeneral<<<(N*M+255)/256, 256>>>(d_dataImg, d_queryImg, d_dataPrefix, M,N,m,n,queryAvg,th1,th2,M_PI,d_result);
+    //checkGeneral<<<1,1>>>(d_dataImg, d_queryImg, d_dataPrefix, M,N,m,n,queryAvg,th1,th2,M_PI,d_result);
 
     cudaMemcpy(result, d_result, M*N*3*sizeof(float), cudaMemcpyDeviceToHost);
 
