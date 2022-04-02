@@ -137,12 +137,6 @@ void checkGeneral(int * dataImg, int * queryImg, long long * prefixSum, int M, i
         }else{
             s = prefixSum[a2*N+b1];
         }
-        // for(int i = a1;i<a2;i++){
-        //     for(int j=b1; j<b2; j++){
-        //         printf("(At i:%d j:%d prefixSum: %d )",i,j, prefixSum[i*N+j]);
-        //     }
-        // }
-        // printf("\n");
 
         // long long sum = (p + q) - (r + s);
         long long sum = (p -r) + (q - s);
