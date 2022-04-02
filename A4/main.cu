@@ -62,19 +62,22 @@ float getInterpolated(int a, int b, int i, int j, float theta, int M, int N, int
 }
 
 __global__
-void checkGeneral(int * &dataImg, int * &queryImg, int M, int N, int m, int n, int queryAvg, double th1, double th2, float theta, int* &result){
+void checkGeneral(int * dataImg, int * queryImg, int M, int N, int m, int n, int queryAvg, double th1, double th2, float theta, int* result){
 
     int a,b;
     int absi = blockIdx.x*256 + threadIdx.x;
-    a = absi%M;
+    a = absi/N;
     b = absi%N;
 
-    // printf("blockdin: %d\n", blockIdx.x);
+    // printf("At start bid: %d tid: %d\n", blockIdx.x, threadIdx.x);
+
     result[absi] = 1;
     // if(absi > 20000)
     // printf("abs: %d a: %d b: %d\n",absi, a, b);
-    float sum = 0;
-    //printf("Before interpol a: %d b: %d %f\n", a, b, abs(queryAvg-sum)/(m*n));
+    float sum = 0;    
+
+    // printf("Before interpol bid: %d tid: %d\n", blockIdx.x, threadIdx.x);
+
     for(int i =0; i<m; i++){
         for(int j=0; j<n; j++){
             sum += getInterpolated(a,b,i,j,theta,M,N,dataImg,3);
@@ -83,7 +86,7 @@ void checkGeneral(int * &dataImg, int * &queryImg, int M, int N, int m, int n, i
 
 
     // cout << "a: " << a << " b: " << b << " " << abs(queryAvg-sum)/(m*n) << endl;
-    printf("After interpol a: %d b: %d %f\n", a, b, abs(queryAvg-sum)/(m*n));
+    // printf("After interpol bid: %d tid: %d\n", blockIdx.x, threadIdx.x);
 
 
     if(abs(queryAvg-sum)<=th2){
@@ -96,7 +99,7 @@ void checkGeneral(int * &dataImg, int * &queryImg, int M, int N, int m, int n, i
             }
         }
         // cout << "   -> " <<sqrt(sum) << endl;
-        printf("    -> %f\n",sqrt(sum));
+        // printf("    -> %f\n",sqrt(sum));
         if(sqrt(sum)<=th1){
             int ansx = M-d_round(a + m*cos(theta) );
             int ansy = d_round(b + n*sin(theta) );
@@ -139,23 +142,25 @@ int main(int argc, char** argv)
     
     int *d_dataImg;
     int *d_queryImg;
-    int *d_result;
     
    
     cudaMalloc(&d_dataImg, (M*N*4)*sizeof(int));
     cudaMalloc(&d_queryImg, (m*n*4)*sizeof(int));
-    cudaMalloc(&d_result, (M*N)*sizeof(int));
-    cudaMemset(d_result, 0, M*N*sizeof(int));
 
     cudaMemcpy(d_dataImg, dataImg, (M*N*4)*sizeof(int), cudaMemcpyHostToDevice);
     cudaMemcpy(d_queryImg, queryImg, (m*n*4)*sizeof(int), cudaMemcpyHostToDevice);
 
+    int *result = new int[N*M];
+    memset(result, 0, M*N*sizeof(int));
+    int *d_result;
+    cudaMalloc(&d_result, M*N*sizeof(float));
+    cudaMemcpy(d_result, result, M*N*sizeof(float), cudaMemcpyHostToDevice);
+
     int queryAvg = getAvg(queryImg, m,n);
     // checkGeneral(dataImg, queryImg, M,N,m,n,queryAvg,th1,th2,45*M_PI/180);
 
-    checkGeneral<<<(N*M+255)/256, 256>>>(d_dataImg, d_queryImg, M,N,m,n,queryAvg,th1,th2,0*M_PI/180,d_result);
+    checkGeneral<<<(N*M+255)/256, 256>>>(d_dataImg, d_queryImg, M,N,m,n,queryAvg,th1,th2,45*M_PI/180,d_result);
 
-    int *result = new int[M*N];
     cudaMemcpy(result, d_result, M*N*sizeof(int), cudaMemcpyDeviceToHost);
 
     for(int i=0; i<M; i++){
