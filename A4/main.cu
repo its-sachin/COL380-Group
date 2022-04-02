@@ -2,39 +2,20 @@
 #include <chrono>
 // using namespace std;
 
-void readImage(int* &img, int &m, int &n, std::string fileName, long long *&prefixSum, bool isData = false){
+void readImage(int* &img, int &m, int &n, std::string fileName){
 
     std::ifstream file(fileName);
     file >> m >> n;
 
-    img = new int[m*n*4];
-
-    if(isData){
-        prefixSum = new long long[m*n];
-    }
+    img = new int[m*n*3];
 
     for (int i = 0; i < m; i++){
         for (int j = 0; j < n; j++){
             int sum = 0;
             for (int k = 0; k < 3; k++){
-                file>>img[(i*n+j)*4+k];
-                sum+=img[(i*n+j)*4+k];
+                file>>img[(i*n+j)*3+k];
+                sum+=img[(i*n+j)*3+k];
             }
-            img[(i*n+j)*4+3] = sum/3;  
-            if(isData){
-                prefixSum[i*n+j] = sum/3;
-                if(i == 0){
-                    if(j!=0){
-                        prefixSum[j] += prefixSum[j-1];
-                    }
-                }
-                else{
-                    if(j==0)
-                        prefixSum[i*n+j] += prefixSum[(i-1)*n];
-                    else
-                        prefixSum[i*n+j] += prefixSum[(i-1)*n+j] + prefixSum[i*n + j-1] - prefixSum[(i-1)*n+j-1];
-                }
-            } 
         }
     }
     file.close();
@@ -57,24 +38,27 @@ int d_round(float x){
 
 __device__
 float getInterpolated(int a, int b, int i, int j, float theta, int M, int N, int* &dataImg, int ind){
-    float xx = a + i*cos(theta) - j*sin(theta);
-    float yy = b + i*sin(theta) + j*cos(theta);
+    int sign = 1;
+    if(theta < 0)sign=-1;
+
+    float xx = a + i*cos(theta) - abs(j*sin(theta));
+    float yy = b + sign*(abs(i*sin(theta)) + j*cos(theta));
     float x = xx - d_floor(xx);
     float y = yy - d_floor(yy);
     if(xx<0 || ceil(xx)>=M || yy<0 || ceil(yy)>=N){
         return 0;
     }
-    int z00 = dataImg[((d_floor(xx))*N + (d_floor(yy)))*4 + ind];
-    int z01 = dataImg[((d_floor(xx))*N + (d_ceil(yy)))*4 + ind];
-    int z10 = dataImg[((d_ceil(xx))*N + (d_floor(yy)))*4 + ind];
-    int z11 = dataImg[((d_ceil(xx))*N + (d_ceil(yy)))*4 + ind];
+    int z00 = dataImg[((d_floor(xx))*N + (d_floor(yy)))*3 + ind];
+    int z01 = dataImg[((d_floor(xx))*N + (d_ceil(yy)))*3 + ind];
+    int z10 = dataImg[((d_ceil(xx))*N + (d_floor(yy)))*3 + ind];
+    int z11 = dataImg[((d_ceil(xx))*N + (d_ceil(yy)))*3 + ind];
     float cx = 1-x;
     // cout << "x: " << x << " y: " << y << " cx: " << cx << " z01: "<< z00 << " " <<z01 << " " <<z10 << " " <<z11<< endl;
     return ( (z00*cx + z10*x)*(1-y) + (z01*cx + z11*x)*y );
 }
 
 __global__
-void checkGeneral(int * dataImg, int * queryImg, long long * prefixSum, int M, int N, int m, int n, int queryAvg, double th1, double th2, float pi, float* result){
+void checkGeneral(int * dataImg, int * queryImg, float * prefix, int M, int N, int m, int n, float queryAvg, double th1, double th2, float pi, float* result){
 
     int a,b;
     int absi = blockIdx.x*256 + threadIdx.x;
@@ -82,6 +66,8 @@ void checkGeneral(int * dataImg, int * queryImg, long long * prefixSum, int M, i
     b = absi%N;
 
     int angles[3] = {45,0,-45};
+
+    if(a >= M or a < 0 )return ;
     // printf("At start bid: %d tid: %d\n", blockIdx.x, threadIdx.x);
     // if(absi > 20000)
     // printf("abs: %d a: %d b: %d\n",absi, a, b);
@@ -98,43 +84,42 @@ void checkGeneral(int * dataImg, int * queryImg, long long * prefixSum, int M, i
         //     }
         // }
 
-        //printf("a: %d b: %d val: %d\n", a, b, abs(queryAvg-sum));
         
         float theta = angles[t]*pi/180;
 
-        int a1 = a - n*sin(theta);
-        int b1 = b;
-        int b2 = b + n*cos(theta) + m*sin(theta);
+        // if(a == 49 and b == 49)
+        // printf("before a: %d b: %d theta: %f th2: %f, queryAvg: %f\n", a, b, theta,th2,queryAvg);
+
+        int sign = 1;
+        if(theta < 0)sign=-1;
+
+        int a1 = a - abs(n*sin(theta));
+        int b2 = b + sign*(n*cos(theta) + abs(m*sin(theta)));
         int a2 = a + m*cos(theta);
-        long long p = prefixSum[a1*N+b1];
-        long long q = prefixSum[a2*N+b2];
-        long long r = prefixSum[a1*N+b2];
-        long long s = prefixSum[a2*N+b1];
-        if(a1*N+b1<0 or a1*N+b1>=M*N){
-            p = 0;
-        }else if(a2*N+b2<0 or a2*N+b2>=M*N){
-            q = 0;
-        }else if(a1*N+b2<0 or a1*N+b2>=M*N){
-            r = 0;
-        }else if(a2*N+b1<0 or a2*N+b1>=M*N){
-            s = 0;
-        }
 
-        long long sum = p + q - r - s;
-        //printf("p: %d q: %d r: %d , s: %d \n", p, q, r, s);
-        //printf("a1: %d b1: %d a2: %d b2: %d  P: %d Q: %d R: %d S: %d theta: %f \n ", a1, b1,a2,b2 ,a1*N+b1, a2*N+b2, a1*N+b2, a2*N+b1 ,theta);
-        printf("a1: %d b1: %d a2: %d b2: %d  P: %d Q: %d R: %d S: %d theta: %f \n ", a1, b1,a2,b2 ,p,q,r,s,theta);
-        //printf("a: %d b: %d val: %d\n", a, b, abs(queryAvg-sum));
-        //int sum = prefixSum[a1*N + b1] + prefixSum[a2*N + b2] - prefixSum[a1*N + b2] - prefixSum[a2*N + b1];
+        int denom = abs((a2-a1)*(b2-b));
 
-        printf("a: %d b: %d sum: %d , queryAvg: %d , absDiff: %d, th2: %f \n", a, b,sum,queryAvg,abs(queryAvg-sum),th2);
+        a1 = max(min(a1,M-1),0);
+        b2 = max(min(b2,N-1),0);
+        a2 = max(min(a2,M-1),0);
+    
+        float sum = sign*(prefix[a1*N + b] + prefix[a2*N + b2] - prefix[a2*N + b] - prefix[a1*N + b2])/denom;
+
+        // //printf("p: %d q: %d r: %d , s: %d \n", p, q, r, s);
+        // //printf("a1: %d b1: %d a2: %d b2: %d  P: %d Q: %d R: %d S: %d theta: %f \n ", a1, b1,a2,b2 ,a1*N+b1, a2*N+b2, a1*N+b2, a2*N+b1 ,theta);
+        // printf("a1: %d b1: %d a2: %d b2: %d  P: %d Q: %d R: %d S: %d theta: %f \n ", a1, b1,a2,b2 ,p,q,r,s,theta);
+        // //printf("a: %d b: %d val: %d\n", a, b, abs(queryAvg-sum));
+        // //int sum = prefixSum[a1*N + b1] + prefixSum[a2*N + b2] - prefixSum[a1*N + b2] - prefixSum[a2*N + b1];
+
+        // if(a == 49 and b == 49)
+        // printf("(a: %d b: %d angle : %d), (sum: %f) , (queryAvg: %f) , (absDiff: %f), (a1 %d, b1 %d, a2 %d, b2 %d), (p11 %f, p22 %f, p21 %f, p12 %f) sign %d \n", a, b,angles[t],sum,queryAvg,abs(queryAvg-sum),a1,b,a2,b2,prefix[a1*N + b],prefix[a2*N + b2],prefix[a2*N + b],prefix[a1*N + b2],sign);
 
         if(abs(queryAvg-sum)<=th2){
             double sum = 0;
             for (int i = 0; i<m; i++){
                 for (int j = 0; j<n; j++){
                     for (int r = 0; r < 3; r++){
-                        sum+=pow(getInterpolated(a,b,i,j,theta,M,N,dataImg,r)-queryImg[(i*n+j)*4+r],2)/(m*n*3);
+                        sum+=pow(getInterpolated(a,b,i,j,theta,M,N,dataImg,r)-queryImg[(i*n+j)*3+r],2)/(m*n*3);
                     }
                 }
             }
@@ -153,15 +138,18 @@ void checkGeneral(int * dataImg, int * queryImg, long long * prefixSum, int M, i
     }
 }
 
-int getAvg(int* &queryImg, int m, int n){
-    int queryAvg = 0;
+float getAvg(int* &queryImg, int m, int n){
+    float queryAvg = 0;
 
     for(int i=0; i<m; i++){        
         for(int j=0; j<n; j++){
-            queryAvg+=queryImg[(i*n+j)*4+3];
+            float sum = 0;
+            for(int k=0; k<3; k++)
+                sum += queryImg[(i*n+j)*3+k];
+            queryAvg += sum/3;
         }
     }
-    return queryAvg;
+    return queryAvg/(m*n);
 }
 
 class container{
@@ -175,6 +163,31 @@ class container{
         angle = c;
     }
 };
+
+void setSum(int *a, float *&sum, int m, int n){
+
+    sum = new float[m*n];
+    sum[0] = (a[0]+a[1]+a[2])/3;
+ 
+    for (int i=1; i<n; i++){
+        float s = 0;
+        for(int k=0; k<3; k++)s+=a[i*3+k];
+        sum[i] = sum[i-1] + s/3; 
+    }
+    for (int i=1; i<m; i++){
+        float s = 0;
+        for(int k=0; k<3; k++)s+=a[i*n*3+k];
+        sum[i*n] = sum[(i-1)*n] + s/3;
+    }
+ 
+    for (int i=1; i<m; i++){
+        for (int j=1; j<n; j++){
+            float s = 0;
+            for(int k=0; k<3; k++)s+=a[i*n*3+j*3+k];
+            sum[i*n+j] = sum[(i - 1)*n+j] + sum[i*n + j - 1] - sum[(i - 1)*n + j - 1] + s/3;
+        }
+    }
+}
 
 
 int main(int argc, char** argv)
@@ -191,25 +204,24 @@ int main(int argc, char** argv)
 
     int *dataImg;
     int *queryImg;
-    long long *dataPrefix;
 
-    readImage(dataImg,M,N,dataImgPath,dataPrefix,true);
-    readImage(queryImg,m,n,queryImgPath,dataPrefix);
-
-    th2*=m*n;
+    readImage(dataImg,M,N,dataImgPath);
+    readImage(queryImg,m,n,queryImgPath);
     
     int *d_dataImg;
     int *d_queryImg;
-    long long *d_dataPrefix;
-    
-   
-    cudaMalloc(&d_dataImg, (M*N*4)*sizeof(int));
-    cudaMalloc(&d_queryImg, (m*n*4)*sizeof(int));
-    cudaMalloc(&d_dataPrefix, (M*N)*sizeof(int));
+     
+    cudaMalloc(&d_dataImg, (M*N*3)*sizeof(int));
+    cudaMalloc(&d_queryImg, (m*n*3)*sizeof(int));
 
-    cudaMemcpy(d_dataImg, dataImg, (M*N*4)*sizeof(int), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_queryImg, queryImg, (m*n*4)*sizeof(int), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_dataPrefix, dataPrefix, (M*N)*sizeof(long long), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_dataImg, dataImg, (M*N*3)*sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_queryImg, queryImg, (m*n*3)*sizeof(int), cudaMemcpyHostToDevice);
+
+    float *dataPrefix;
+    float *d_dataPrefix;
+    setSum(dataImg,dataPrefix,M,N);
+    cudaMalloc(&d_dataPrefix, (M*N)*sizeof(float));
+    cudaMemcpy(d_dataPrefix, dataPrefix, (M*N)*sizeof(float), cudaMemcpyHostToDevice);
 
     float *result = new float[N*M*3];
     for(int i=0; i<M; i++){
@@ -223,7 +235,7 @@ int main(int argc, char** argv)
     cudaMalloc(&d_result, M*N*3*sizeof(float));
     cudaMemcpy(d_result, result, M*N*3*sizeof(float), cudaMemcpyHostToDevice);
 
-    int queryAvg = getAvg(queryImg, m,n);
+    float queryAvg = getAvg(queryImg, m,n);
     // checkGeneral(dataImg, queryImg, M,N,m,n,queryAvg,th1,th2,45*M_PI/180);
 
     auto mid = std::chrono::high_resolution_clock::now();
@@ -262,10 +274,10 @@ int main(int argc, char** argv)
 
     std::cout << "CUDA error: " << cudaGetErrorString(cudaGetLastError()) << std::endl; // add
 
-    cudaFree(d_dataImg);
-    cudaFree(d_queryImg);
-    cudaFree(d_result);
-    delete(dataImg);
-    delete(result);
-    delete(queryImg);
+    // cudaFree(d_dataImg);
+    // cudaFree(d_queryImg);
+    // cudaFree(d_result);
+    // delete(dataImg);
+    // delete(result);
+    // delete(queryImg);
 }
