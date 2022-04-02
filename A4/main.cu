@@ -38,11 +38,9 @@ int d_round(float x){
 
 __device__
 float getInterpolated(int a, int b, int i, int j, float theta, int M, int N, int* &dataImg, int ind){
-    int sign = 1;
-    if(theta < 0)sign=-1;
 
-    float xx = a + i*cos(theta) - abs(j*sin(theta));
-    float yy = b + sign*(abs(i*sin(theta)) + j*cos(theta));
+    float xx = a + i*cos(theta) - j*sin(theta);
+    float yy = b + i*sin(theta) + j*cos(theta);
     float x = xx - d_floor(xx);
     float y = yy - d_floor(yy);
     if(xx<0 || ceil(xx)>=M || yy<0 || ceil(yy)>=N){
@@ -93,25 +91,21 @@ void checkGeneral(int * dataImg, int * queryImg, float * prefix, int M, int N, i
         int sign = 1;
         if(theta < 0)sign=-1;
 
-        int a1 = a - abs(n*sin(theta));
-        int b2 = b + sign*(n*cos(theta) + abs(m*sin(theta)));
-        int a2 = a + m*cos(theta);
-        int b1 = b;
+        int a1,b1,a2,b2;
 
-        if(a1 > a2){
-            int temp = a1;
-            a1 = a2;
-            a2 = temp;
+        if(theta >= 0){
+            a1 = a - abs(n*sin(theta))-1;
+            b2 = b + sign*(n*cos(theta) + abs(m*sin(theta)));
+            a2 = a + m*cos(theta);
+            b1 = b-1;
         }
 
-        if(b1 > b2){
-            int temp = b1;
-            b1 = b2;
-            b2 = temp;
+        else{
+            a1 = a - 1;
+            b1 = b - m*cos(theta) -1;
+            b2 = b - n*sin(theta);
+            a2 = a + n*cos(theta) - m*sin(theta);
         }
-
-        b1-=1;
-        a1-=1;
 
         int denom = abs((a2-a1)*(b2-b1));
 
@@ -136,16 +130,16 @@ void checkGeneral(int * dataImg, int * queryImg, float * prefix, int M, int N, i
             for (int i = 0; i<m; i++){
                 for (int j = 0; j<n; j++){
                     for (int r = 0; r < 3; r++){
-                        sum+=pow(getInterpolated(a,b,i,j,theta,M,N,dataImg,r)-queryImg[(i*n+j)*3+r],2)/(m*n*3);
+                        sum+=pow(getInterpolated(a,b,i,j,theta,M,N,dataImg,r)-queryImg[(i*n+j)*3+r],2);
                     }
                 }
             }
             // cout << "   -> " <<sqrt(sum) << endl;
             // printf("    -> %f\n",sqrt(sum));
-            float sq = sqrt(sum);
+            float sq = sqrt(sum/(m*n*3));
             if(sq<=th1){
-                int ansx = M-d_round(a + m*cos(theta) );
-                int ansy = d_round(b + m*sin(theta) );
+                int ansx =  a + m*cos(theta) ;
+                int ansy =  b + m*sin(theta) ;
                 // printf("IRes: %d %d %d %f\n",ansx,ansy,t,sq);
                 result[ansx*N*3 + ansy*3 + t] = sq;
                 // result[(ansx*N + ansy)*3 = ansx;

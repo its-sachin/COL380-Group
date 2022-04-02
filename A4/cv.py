@@ -29,14 +29,16 @@ def writeImg(path):
     data.close()
 
 #writeImg("test.jpg")
-#dataimg = readImg("test.txt")
+dataimg = readImg("test_case_1_small_image/data_image_a.txt")
 # dataimg = cv2.imread("test.jpg", cv2.IMREAD_COLOR)
-writeImg("query_rotate.jpg")
-# queryimg = readImg("query_imageSmall.txt")
-# cv2.imshow("data", dataimg)
-# cv2.imshow("query", queryimg)
+# writeImg("query_rotate.jpg")
+queryimg = readImg("test_case_1_small_image/query_image_a.txt")
 
-# cv2.waitKey()
+dataimg = cv2.circle(dataimg, (200,199), 2, 255, 2)
+cv2.imshow("data", dataimg)
+cv2.imshow("query", queryimg)
+
+cv2.waitKey()
 
 # w0 = 100
 # h0 = 0

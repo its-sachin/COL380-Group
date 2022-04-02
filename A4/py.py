@@ -5,11 +5,8 @@ from sys import argv
 
 def getInterpolated( a,  b,  i,  j, theta,  M,  N, dataImg,  ind, top=False):
 
-    sign = 1
-    if(theta < 0):sign=-1
-
-    xx = a + a + i*cos(theta) - abs(j*sin(theta))
-    yy = b + b + sign*(abs(i*sin(theta)) + j*cos(theta))
+    xx = a + i*cos(theta) - j*sin(theta)
+    yy = b + i*sin(theta) + j*cos(theta)
     x = xx - floor(xx)
     y = yy - floor(yy) 
     if(xx<0 or ceil(xx)>=M or yy<0 or ceil(yy)>=N):
@@ -27,26 +24,26 @@ def setVal(arr, i, j, m, n):
 
 def checkGeneral( dataImg, queryImg, prefixSum,  M,  N,  m,  n,  queryAvg,  th1,  th2, datacv, querycv):
 
-    
+    starth = 125
+    startw = 265
     angles = [-45]
     for an in range(len(angles)):
         theta = angles[an]*pi/180
-        for a in range(49,M):
-            for b in range(49,N):
+        for a in range(starth,M):
+            for b in range(startw,N):
                 
-                sign = 1;
-                if(theta < 0):sign=-1;
+                if(theta>=0):
+                    aa1 = int(a - n*sin(theta))-1
+                    bb2 = int(b + n*cos(theta) + m*sin(theta))
+                    aa2 = int(a + m*cos(theta))
+                    bb1 = b -1
+                else:
+                    aa1 = a - 1
+                    bb1 = int(b - m*cos(theta)) -1 
+                    bb2 = int(b - n*sin(theta))
+                    aa2 = int(a + n*cos(theta) - m*sin(theta))
 
-                aa1 = int(a - abs(n*sin(theta)))
-                bb2 = int(b + sign*(n*cos(theta) + abs(m*sin(theta))))
-                aa2 = int(a + m*cos(theta))
-                bb1 = b 
-
-                if(aa1>aa2):aa1,aa2=aa2,aa1
-                if(bb1>bb2):bb1,bb2=bb2,bb1
-
-                aa1-=1
-                bb1-=1
+                print(a,b,aa1,bb1,aa2,bb2)
 
                 a1 = max(min(aa1,M-1),0)
                 b1 = max(min(bb1,N-1),0)
@@ -68,7 +65,7 @@ def checkGeneral( dataImg, queryImg, prefixSum,  M,  N,  m,  n,  queryAvg,  th1,
                 # cv2.imshow('querycv',querycv)
                 cv2.waitKey()
 
-                if(a == 49 and b == 49):
+                if(a == starth and b == startw):
                     print(prefix[a1][b1] + prefix[a2][b2] - prefix[a2][b1] - prefix[a1][b2])
                     print("(a: ", a," b: ",b,"angle:",angles[an],") (queryavg: ",queryAvg,")(sum:",sum,") (absdiff : ",abs(queryAvg-sum),")",)
                     print("a1",a1,"b1",b1,"a2",a2,"b2",b2)
@@ -80,12 +77,13 @@ def checkGeneral( dataImg, queryImg, prefixSum,  M,  N,  m,  n,  queryAvg,  th1,
                             for r in range(3):
                                 x,y,v = getInterpolated(a,b,i,j,theta,M,N,dataImg,r,True)
                                 # print('x:',x,'y:',y,'interp : ' ,v, 'query : ', queryImg[i][j][r], 'data:',dataImg[int(x)][int(y)][r])
-                                sum+=pow(v-queryImg[i][j][r],2)/(m*n*3)
+                                sum+=pow(v-queryImg[i][j][r],2)
                             # datacv = cv2.circle(datacv, (int(y),int(x)), 2, 255, 2)
                             # querycv = cv2.circle(querycv, (int(j),int(i)), 2, 255, 2)
                             # cv2.imshow('datacv',datacv)
                             # cv2.imshow('querycv',querycv)
                             # cv2.waitKey()
+                    sum /=(m*n*3)
                     print("   -> -> -> -> -> -> -> ",a,b ,sqrt(sum))
                     if(sqrt(sum)<=th1):
                         print("Res: ",M-round(a+m*cos(theta)),round(b+m*sin(theta)))
@@ -134,12 +132,12 @@ def prefixSum2D(a) :
                            a[i][j][3])
     return psa
 
-datacv,dataImg,M,N = readImg("data_image.txt")
-querycv,queryImg,m,n = readImg("query_rotate.txt")
+datacv,dataImg,M,N = readImg("test_case_1_small_image/data_image_a.txt")
+querycv,queryImg,m,n = readImg("test_case_1_small_image/query_image_a.txt")
 
 prefix = prefixSum2D(dataImg)
-th1 = 0
-th2 = 2
+th1 = 9
+th2 = 10
 queryAvg = 0
 
 for i in range(m):
