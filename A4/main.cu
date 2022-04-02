@@ -96,14 +96,31 @@ void checkGeneral(int * dataImg, int * queryImg, float * prefix, int M, int N, i
         int a1 = a - abs(n*sin(theta));
         int b2 = b + sign*(n*cos(theta) + abs(m*sin(theta)));
         int a2 = a + m*cos(theta);
+        int b1 = b;
 
-        int denom = abs((a2-a1)*(b2-b));
+        if(a1 > a2){
+            int temp = a1;
+            a1 = a2;
+            a2 = temp;
+        }
+
+        if(b1 > b2){
+            int temp = b1;
+            b1 = b2;
+            b2 = temp;
+        }
+
+        b1-=1;
+        a1-=1;
+
+        int denom = abs((a2-a1)*(b2-b1));
 
         a1 = max(min(a1,M-1),0);
         b2 = max(min(b2,N-1),0);
+        b1 = max(min(b1,N-1),0);
         a2 = max(min(a2,M-1),0);
     
-        float sum = sign*(prefix[a1*N + b] + prefix[a2*N + b2] - prefix[a2*N + b] - prefix[a1*N + b2])/denom;
+        float sum = (prefix[a1*N + b1] + prefix[a2*N + b2] - prefix[a2*N + b1] - prefix[a1*N + b2])/denom;
 
         // //printf("p: %d q: %d r: %d , s: %d \n", p, q, r, s);
         // //printf("a1: %d b1: %d a2: %d b2: %d  P: %d Q: %d R: %d S: %d theta: %f \n ", a1, b1,a2,b2 ,a1*N+b1, a2*N+b2, a1*N+b2, a2*N+b1 ,theta);

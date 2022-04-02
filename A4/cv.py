@@ -30,35 +30,35 @@ def writeImg(path):
 
 #writeImg("test.jpg")
 #dataimg = readImg("test.txt")
-dataimg = cv2.imread("test.jpg", cv2.IMREAD_COLOR)
-# writeImg("test.jpg")
+# dataimg = cv2.imread("test.jpg", cv2.IMREAD_COLOR)
+writeImg("query_rotate.jpg")
 # queryimg = readImg("query_imageSmall.txt")
 # cv2.imshow("data", dataimg)
 # cv2.imshow("query", queryimg)
 
 # cv2.waitKey()
 
-w0 = 100
-h0 = 0
-w1 = 180
-h1 = 250
-crop_img = dataimg[w0:w1, h0:h1]
-# cv2.imshow("test", dataimg)
-# cv2.imshow('qimg', crop_img)
-# data = open('test2.txt', "w")
-# data.write(str(w1-w0)+" "+str(h1-h0)+"\n")
-# for i in range(w1-w0):
-#     for j in range(h1-h0):
-#         for k in range(3):
-#             data.write(str(crop_img[i][j][k])+" ")
-# data.close()
-# # cv2.imshow("queryimg", queryimg)
-# cv2.waitKey()
-cv2.imwrite("test2.jpg",crop_img)
-writeImg('test2.jpg')
-# q2 = readImg('test2.txt')
-# cv2.imshow('q2', q2)
-# cv2.waitKey()
+# w0 = 100
+# h0 = 0
+# w1 = 180
+# h1 = 250
+# crop_img = dataimg[w0:w1, h0:h1]
+# # cv2.imshow("test", dataimg)
+# # cv2.imshow('qimg', crop_img)
+# # data = open('test2.txt', "w")
+# # data.write(str(w1-w0)+" "+str(h1-h0)+"\n")
+# # for i in range(w1-w0):
+# #     for j in range(h1-h0):
+# #         for k in range(3):
+# #             data.write(str(crop_img[i][j][k])+" ")
+# # data.close()
+# # # cv2.imshow("queryimg", queryimg)
+# # cv2.waitKey()
+# cv2.imwrite("test2.jpg",crop_img)
+# writeImg('test2.jpg')
+# # q2 = readImg('test2.txt')
+# # cv2.imshow('q2', q2)
+# # cv2.waitKey()
 
 
 
