@@ -130,13 +130,13 @@ void checkGeneral(int * dataImg, int * queryImg, float * prefix, int M, int N, i
             for (int i = 0; i<m; i++){
                 for (int j = 0; j<n; j++){
                     for (int r = 0; r < 3; r++){
-                        sum+=pow(getInterpolated(a,b,i,j,theta,M,N,dataImg,r)-queryImg[(i*n+j)*3+r],2);
+                        sum+=pow(getInterpolated(a,b,i,j,theta,M,N,dataImg,r)-queryImg[(i*n+j)*3+r],2)/(m*n*3);
                     }
                 }
             }
             // cout << "   -> " <<sqrt(sum) << endl;
             // printf("    -> %f\n",sqrt(sum));
-            float sq = sqrt(sum/(m*n*3));
+            float sq = sqrt(sum);
             if(sq<=th1){
                 int ansx =  a + m*cos(theta) ;
                 int ansy =  b + m*sin(theta) ;
