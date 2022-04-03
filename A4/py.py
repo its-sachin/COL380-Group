@@ -24,8 +24,8 @@ def setVal(arr, i, j, m, n):
 
 def checkGeneral( dataImg, queryImg, prefixSum,  M,  N,  m,  n,  queryAvg,  th1,  th2, datacv, querycv):
 
-    starth = 125
-    startw = 265
+    starth = 274
+    startw = 353
     angles = [-45]
     for an in range(len(angles)):
         theta = angles[an]*pi/180
@@ -78,11 +78,11 @@ def checkGeneral( dataImg, queryImg, prefixSum,  M,  N,  m,  n,  queryAvg,  th1,
                                 x,y,v = getInterpolated(a,b,i,j,theta,M,N,dataImg,r,True)
                                 # print('x:',x,'y:',y,'interp : ' ,v, 'query : ', queryImg[i][j][r], 'data:',dataImg[int(x)][int(y)][r])
                                 sum+=pow(v-queryImg[i][j][r],2)
-                            # datacv = cv2.circle(datacv, (int(y),int(x)), 2, 255, 2)
-                            # querycv = cv2.circle(querycv, (int(j),int(i)), 2, 255, 2)
-                            # cv2.imshow('datacv',datacv)
-                            # cv2.imshow('querycv',querycv)
-                            # cv2.waitKey()
+                            datacv = cv2.circle(datacv, (int(y),int(x)), 2, 255, 2)
+                            querycv = cv2.circle(querycv, (int(j),int(i)), 2, 255, 2)
+                            cv2.imshow('datacv',datacv)
+                            cv2.imshow('querycv',querycv)
+                            cv2.waitKey()
                     sum /=(m*n*3)
                     print("   -> -> -> -> -> -> -> ",a,b ,sqrt(sum))
                     if(sqrt(sum)<=th1):
@@ -132,8 +132,8 @@ def prefixSum2D(a) :
                            a[i][j][3])
     return psa
 
-datacv,dataImg,M,N = readImg("test_case_1_small_image/data_image_a.txt")
-querycv,queryImg,m,n = readImg("test_case_1_small_image/query_image_a.txt")
+datacv,dataImg,M,N = readImg("test_case_2_small_image/data_image_a.txt")
+querycv,queryImg,m,n = readImg("test_case_2_small_image/query_image_a.txt")
 
 prefix = prefixSum2D(dataImg)
 th1 = 9

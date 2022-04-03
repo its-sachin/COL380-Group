@@ -138,7 +138,7 @@ void checkGeneral(int * dataImg, int * queryImg, float * prefix, int M, int N, i
             // printf("    -> %f\n",sqrt(sum));
             float sq = sqrt(sum);
             if(sq<=th1){
-                int ansx =  a + m*cos(theta) ;
+                int ansx =  M - (a + m*cos(theta) )-1;
                 int ansy =  b + m*sin(theta) ;
                 // printf("IRes: %d %d %d %f\n",ansx,ansy,t,sq);
                 result[ansx*N*3 + ansy*3 + t] = sq;
@@ -264,7 +264,7 @@ int main(int argc, char** argv)
         for(int j=0; j<N; j++){
             for(int k=0; k<3; k++){
                 if(result[i*N*3+j*3+k]!=-1){
-                    printf("%d %d %d %f\n",i,j,k,result[i*N*3+j*3+k]);
+                    // printf("%d %d %d %f\n",i,j,k,result[i*N*3+j*3+k]);
                     container* c = new container(i,j,angles[k]);
                     pq.push({result[i*N*3+j*3+k], c});
                 }
@@ -284,7 +284,7 @@ int main(int argc, char** argv)
     reverse(vecRes.begin(), vecRes.end());
     for(int i = 0;i<vecRes.size();i++){
         outfile << vecRes[i].second->x << " " << vecRes[i].second->y << " " << vecRes[i].second->angle << std::endl;
-        printf("Res[%d]: %d %d %d %f\n",i,vecRes[i].second->x,vecRes[i].second->y,vecRes[i].second->angle,vecRes[i].first);
+        // printf("Res[%d]: %d %d %d %f\n",i,vecRes[i].second->x,vecRes[i].second->y,vecRes[i].second->angle,vecRes[i].first);
     }
     // for(int i=0; i<maxN && pq.size() > 0; i++){
     //     std::pair<float, container*> p = pq.top();
