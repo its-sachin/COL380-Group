@@ -159,9 +159,7 @@ void checkGeneral(int * dataImg, int * queryImg, float * prefix, int M, int N, i
             // cout << "   -> " <<sqrt(sum) << endl;
             // printf("    -> %f\n",sqrt(sum));
             float sq = sqrt(sum);
-            if(M-a-1 == 840 and b == 900){
-                printf("sqrt %f",sq);
-            }
+
             if(sq<=th1){
                 int ansx =  M- a-1 ;
                 int ansy =  b ;
