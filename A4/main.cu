@@ -90,17 +90,17 @@ void checkGeneral(int * dataImg, int * queryImg, float * prefix, int M, int N, i
         int a1,b1,a2,b2;
 
         if(theta < 0){
-            a1 = a + m*sin(theta)-1;
+            a1 = a + m*sin(theta);
             b2 = b + m*cos(theta) - n*sin(theta);
             a2 = a + n*cos(theta);
-            b1 = b-1;
+            b1 = b;
         }
 
         else{
             a2 = a;
-            b1 = b - m*sin(theta) -1;
+            b1 = b - m*sin(theta);
             b2 = b + n*cos(theta);
-            a1 = a - n*cos(theta) - m*sin(theta) - 1;
+            a1 = a - n*cos(theta) - m*sin(theta);
         }
 
         int denom = abs((a2-a1)*(b2-b1));
@@ -118,8 +118,6 @@ void checkGeneral(int * dataImg, int * queryImg, float * prefix, int M, int N, i
         // //printf("a: %d b: %d val: %d\n", a, b, abs(queryAvg-sum));
         // //int sum = prefixSum[a1*N + b1] + prefixSum[a2*N + b2] - prefixSum[a1*N + b2] - prefixSum[a2*N + b1];
 
-        // if(a == 49 and b == 49)
-        // printf("(a: %d b: %d angle : %d), (sum: %f) , (queryAvg: %f) , (absDiff: %f), (a1 %d, b1 %d, a2 %d, b2 %d), (p11 %f, p22 %f, p21 %f, p12 %f) sign %d \n", a, b,angles[t],sum,queryAvg,abs(queryAvg-sum),a1,b,a2,b2,prefix[a1*N + b],prefix[a2*N + b2],prefix[a2*N + b],prefix[a1*N + b2],sign);
 
         if(abs(queryAvg-sum)<=th2){
             double sum = 0;
