@@ -159,7 +159,6 @@ void checkGeneral(int * dataImg, int * queryImg, float * prefix, int M, int N, i
             // cout << "   -> " <<sqrt(sum) << endl;
             // printf("    -> %f\n",sqrt(sum));
             float sq = sqrt(sum);
-
             if(sq<=th1){
                 int ansx =  M- a-1 ;
                 int ansy =  b ;
@@ -346,7 +345,7 @@ int main(int argc, char** argv)
     reverse(vecRes.begin(), vecRes.end());
     for(int i = 0;i<vecRes.size();i++){
         outfile << vecRes[i].second->x << " " << vecRes[i].second->y << " " << vecRes[i].second->angle << std::endl;
-        printf("Res[%d]: %d %d %d %f\n",i,vecRes[i].second->x,vecRes[i].second->y,vecRes[i].second->angle,vecRes[i].first);
+        // printf("Res[%d]: %d %d %d %f\n",i,vecRes[i].second->x,vecRes[i].second->y,vecRes[i].second->angle,vecRes[i].first);
     }
 
     // for(int i=0; i<maxN && pq.size() > 0; i++){
